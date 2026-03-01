@@ -1582,6 +1582,7 @@
     addIncomeBtn.addEventListener('click', addIncome);
     addExpenseBtn.addEventListener('click', addExpense);
 
+    // ========== FIXED IMPORT FUNCTION ==========
     function importFromExcel(e) { 
         const file = e.target.files[0];
         if (!file) return;
@@ -1591,30 +1592,120 @@
             try {
                 const data = new Uint8Array(e.target.result);
                 const workbook = XLSX.read(data, {type: 'array'});
-                const firstSheet = workbook.SheetNames[0];
-                const worksheet = workbook.Sheets[firstSheet];
-                const jsonData = XLSX.utils.sheet_to_json(worksheet, {header: 1});
                 
-                if (jsonData.length > 1) {
-                    const trades = [];
-                    for (let i = 1; i < jsonData.length; i++) {
-                        const row = jsonData[i];
-                        if (row.length >= 10) {
-                            trades.push([
-                                row[0] || '', row[1] || 'Asian', row[2] || '12:00', 
-                                row[3] || 'EURUSD', row[4] || 'Buy', parseFloat(row[5]) || 0, 
-                                parseFloat(row[6]) || 0, parseFloat(row[7]) || 0, 
-                                parseFloat(row[8]) || 0.1, row[9] || 'TP'
-                            ]);
+                // Track what we imported
+                let tradesImported = 0;
+                let incomesImported = 0;
+                let expensesImported = 0;
+                
+                // Import Trades (Sheet 1)
+                if (workbook.SheetNames.length > 0) {
+                    const tradesSheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const tradesData = XLSX.utils.sheet_to_json(tradesSheet, {header: 1, defval: ''});
+                    
+                    if (tradesData.length > 1) {
+                        const trades = [];
+                        // Check if this is a trades sheet (has expected headers)
+                        const headers = tradesData[0] || [];
+                        if (headers[0] === 'Date' && headers[3] === 'Instrument') {
+                            for (let i = 1; i < tradesData.length; i++) {
+                                const row = tradesData[i];
+                                if (row && row.length >= 10) {
+                                    trades.push([
+                                        row[0] || '',                       // Date
+                                        row[1] || 'Asian',                  // Session
+                                        row[2] || '12:00',                  // Time
+                                        row[3] || 'EURUSD',                 // Instrument
+                                        row[4] || 'Buy',                    // Type
+                                        parseFloat(row[5]) || 0,            // Entry
+                                        parseFloat(row[6]) || 0,            // SL
+                                        parseFloat(row[7]) || 0,            // TP
+                                        parseFloat(row[8]) || 0.1,          // Lot
+                                        row[9] || 'TP'                       // Exit Type
+                                    ]);
+                                }
+                            }
+                            if (trades.length > 0) {
+                                saveTrades(currentYear, currentMonth, trades);
+                                tradesImported = trades.length;
+                            }
                         }
                     }
-                    if (trades.length > 0) {
-                        saveTrades(currentYear, currentMonth, trades);
-                        alert(`Imported ${trades.length} trades successfully!`);
+                }
+                
+                // Import Income (Sheet 2)
+                if (workbook.SheetNames.length > 1) {
+                    const incomeSheet = workbook.Sheets[workbook.SheetNames[1]];
+                    const incomeData = XLSX.utils.sheet_to_json(incomeSheet, {header: 1, defval: ''});
+                    
+                    if (incomeData.length > 1) {
+                        const incomes = [];
+                        const headers = incomeData[0] || [];
+                        if (headers[0] === 'Date' && headers[1] && headers[1].includes('Mentorship')) {
+                            for (let i = 1; i < incomeData.length; i++) {
+                                const row = incomeData[i];
+                                if (row && row.length >= 5) {
+                                    // Parse amounts - they're in USD in the export
+                                    incomes.push([
+                                        row[0] || '',                       // Date
+                                        parseFloat(row[1]) || 0,            // Mentorship (USD)
+                                        parseFloat(row[2]) || 0,            // Signals (USD)
+                                        parseFloat(row[3]) || 0,            // Account Mgmt (USD)
+                                        parseFloat(row[4]) || 0             // Other (USD)
+                                    ]);
+                                }
+                            }
+                            if (incomes.length > 0) {
+                                saveIncomes(currentYear, currentMonth, incomes);
+                                incomesImported = incomes.length;
+                            }
+                        }
                     }
                 }
+                
+                // Import Expenses (Sheet 3)
+                if (workbook.SheetNames.length > 2) {
+                    const expensesSheet = workbook.Sheets[workbook.SheetNames[2]];
+                    const expensesData = XLSX.utils.sheet_to_json(expensesSheet, {header: 1, defval: ''});
+                    
+                    if (expensesData.length > 1) {
+                        const expenses = [];
+                        const headers = expensesData[0] || [];
+                        if (headers[0] === 'Date' && headers[1] === 'Category') {
+                            for (let i = 1; i < expensesData.length; i++) {
+                                const row = expensesData[i];
+                                if (row && row.length >= 4) {
+                                    expenses.push([
+                                        row[0] || '',                       // Date
+                                        row[1] || 'Misc',                   // Category
+                                        row[2] || '',                        // Description
+                                        parseFloat(row[3]) || 0             // Amount (USD)
+                                    ]);
+                                }
+                            }
+                            if (expenses.length > 0) {
+                                saveExpenses(currentYear, currentMonth, expenses);
+                                expensesImported = expenses.length;
+                            }
+                        }
+                    }
+                }
+                
+                // Show summary of what was imported
+                let message = [];
+                if (tradesImported > 0) message.push(`${tradesImported} trades`);
+                if (incomesImported > 0) message.push(`${incomesImported} incomes`);
+                if (expensesImported > 0) message.push(`${expensesImported} expenses`);
+                
+                if (message.length > 0) {
+                    alert(`✅ Successfully imported: ${message.join(', ')}`);
+                } else {
+                    alert('No valid data found in the Excel file. Make sure it contains sheets with the correct headers.');
+                }
+                
                 refreshAll();
             } catch (error) {
+                console.error('Import error:', error);
                 alert('Error importing file: ' + error.message);
             }
         };
