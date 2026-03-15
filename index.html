@@ -366,7 +366,7 @@
         }
         .report-grid {
             display: grid;
-            grid-template-columns: repeat(5, 1fr);
+            grid-template-columns: repeat(7, 1fr);
             gap: 15px;
             margin: 20px 0;
         }
@@ -410,6 +410,8 @@
         .day-wed { background-color: #2f8c62; }
         .day-thu { background-color: #9b59b6; }
         .day-fri { background-color: #e67e22; }
+        .day-sat { background-color: #7f8c8d; }
+        .day-sun { background-color: #95a5a6; }
         .expenses-table th { background-color: #2d4b6e; }
         .delete-btn { background: transparent; border: none; color: #b33c2b; font-size: 18px; cursor: pointer; }
         .week-summary-cards {
@@ -562,6 +564,7 @@
 
         <div class="action-buttons">
             <button class="btn" id="addTradeBtn">➕ Add Empty Trade</button>
+            <button class="btn btn-light" id="showAllTradesBtn">📅 Show All Trades</button>
             <select id="tradeSampleSelect" class="sample-dropdown">
                 <option value="">-- Load sample data --</option>
                 <option value="load">📋 Load month sample</option>
@@ -584,7 +587,7 @@
     <div id="weeklyReport" class="sheet">
         <div class="month-note" id="reportMonthIndicator">Weekly Report · 2025 · February · Week 1</div>
         
-        <!-- daily cards with explicit wins / losses -->
+        <!-- daily cards with explicit wins / losses (now includes sat & sun) -->
         <div class="report-grid">
             <div class="report-card">
                 <h3><span class="day-indicator day-mon"></span> Monday</h3>
@@ -620,6 +623,21 @@
                 <div class="report-row"><span class="report-label">Wins:</span> <span class="report-value profit-field" id="friWins">0</span></div>
                 <div class="report-row"><span class="report-label">Losses:</span> <span class="report-value loss-field" id="friLosses">0</span></div>
                 <div class="report-row"><span class="report-label">P&L:</span> <span class="report-value" id="friPL">USD 0</span></div>
+            </div>
+            <!-- New cards for Saturday & Sunday -->
+            <div class="report-card">
+                <h3><span class="day-indicator day-sat"></span> Saturday</h3>
+                <div class="report-row"><span class="report-label">Trades:</span> <span class="report-value" id="satTrades">0</span></div>
+                <div class="report-row"><span class="report-label">Wins:</span> <span class="report-value profit-field" id="satWins">0</span></div>
+                <div class="report-row"><span class="report-label">Losses:</span> <span class="report-value loss-field" id="satLosses">0</span></div>
+                <div class="report-row"><span class="report-label">P&L:</span> <span class="report-value" id="satPL">USD 0</span></div>
+            </div>
+            <div class="report-card">
+                <h3><span class="day-indicator day-sun"></span> Sunday</h3>
+                <div class="report-row"><span class="report-label">Trades:</span> <span class="report-value" id="sunTrades">0</span></div>
+                <div class="report-row"><span class="report-label">Wins:</span> <span class="report-value profit-field" id="sunWins">0</span></div>
+                <div class="report-row"><span class="report-label">Losses:</span> <span class="report-value loss-field" id="sunLosses">0</span></div>
+                <div class="report-row"><span class="report-label">P&L:</span> <span class="report-value" id="sunPL">USD 0</span></div>
             </div>
         </div>
 
@@ -721,53 +739,36 @@
 <script>
 (function() {
     // ----- CURRENCY CONFIGURATION -----
-    // Base storage: all values are stored in USD (internally)
-    // Exchange rates relative to USD (1 USD = ?)
     const exchangeRates = {
         USD: 1,
-        UGX: 3700,   // 1 USD = 3700 UGX
-        KES: 130,     // 1 USD = 130 KES (approx)
-        ZAR: 18.5,    // 1 USD = 18.5 ZAR
-        GBP: 0.79,    // 1 USD = 0.79 GBP
-        EUR: 0.92     // 1 USD = 0.92 EUR
+        UGX: 3700, KES: 130, ZAR: 18.5, GBP: 0.79, EUR: 0.92
     };
 
-    let currentCurrency = 'UGX'; // default selected
+    let currentCurrency = 'UGX';
     const currencySelect = document.getElementById('currencySelect');
     
-    // Helper: convert USD amount to selected currency and round to 1 decimal for USD, 0 decimals for others
     function convertFromUSD(usdAmount) {
         if (usdAmount === 0) return 0;
         let rate = exchangeRates[currentCurrency] || 1;
         let converted = usdAmount * rate;
-        
-        // Round based on currency
-        if (currentCurrency === 'USD') {
-            return Math.round(converted * 10) / 10; // 1 decimal for USD
-        } else {
-            return Math.round(converted); // 0 decimals for other currencies
-        }
+        if (currentCurrency === 'USD') return Math.round(converted * 10) / 10;
+        else return Math.round(converted);
     }
 
-    // Helper: convert from selected currency to USD (for input handling)
     function convertToUSD(localAmount) {
         if (localAmount === 0) return 0;
         let rate = exchangeRates[currentCurrency] || 1;
         return localAmount / rate;
     }
 
-    // Format amount with currency symbol and thousands separator
     function formatCurrency(amount) {
         let symbol = '';
         let formattedAmount;
-        
-        // Apply rounding based on currency
         if (currentCurrency === 'USD') {
-            formattedAmount = amount.toFixed(1); // 1 decimal for USD
+            formattedAmount = amount.toFixed(1);
         } else {
-            formattedAmount = amount.toFixed(0); // 0 decimals for others
+            formattedAmount = amount.toFixed(0);
         }
-        
         switch (currentCurrency) {
             case 'USD': symbol = '$'; break;
             case 'UGX': symbol = 'USh '; break;
@@ -777,48 +778,23 @@
             case 'EUR': symbol = '€'; break;
             default: symbol = '';
         }
-        
-        // Add thousands separators
         formattedAmount = formattedAmount.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-        
-        // For USD, ensure we show .0 if needed
         if (currentCurrency === 'USD' && !formattedAmount.includes('.')) {
             formattedAmount += '.0';
         }
-        
         return symbol + formattedAmount;
     }
 
-    // Get currency symbol for display
-    function getCurrencySymbol() {
-        switch (currentCurrency) {
-            case 'USD': return '$';
-            case 'UGX': return 'USh';
-            case 'KES': return 'KSh';
-            case 'ZAR': return 'R';
-            case 'GBP': return '£';
-            case 'EUR': return '€';
-            default: return '';
-        }
-    }
-
-    // Update currency labels throughout the UI
     function updateCurrencyLabels() {
         document.getElementById('plCurrencyLabel').innerText = `(${currentCurrency})`;
         document.getElementById('sessionChartCurrency').innerText = currentCurrency;
         document.getElementById('incomeChartCurrency').innerText = currentCurrency;
-        
-        // Update income table headers - show current currency for inputs
         document.getElementById('incomeMentorshipCurrency').innerText = `(${currentCurrency})`;
         document.getElementById('incomeSignalsCurrency').innerText = `(${currentCurrency})`;
         document.getElementById('incomeAccountCurrency').innerText = `(${currentCurrency})`;
         document.getElementById('incomeOtherCurrency').innerText = `(${currentCurrency})`;
         document.getElementById('incomeTotalCurrency').innerText = `(${currentCurrency})`;
-        
-        // Update expense headers
         document.getElementById('expenseAmountCurrency').innerText = `(${currentCurrency})`;
-        
-        // Update hints
         document.getElementById('incomeInputHint').innerText = `(enter in ${currentCurrency})`;
         document.getElementById('expenseInputHint').innerText = `(enter in ${currentCurrency})`;
     }
@@ -858,7 +834,7 @@
         localStorage.setItem(getExpenseKey(year, month), JSON.stringify(data));
     }
 
-    // ---------- sample data (stored in USD internally) ----------
+    // ---------- sample data (stored in USD) ----------
     function generateSampleTrades(year, month) {
         let mm = String(month + 1).padStart(2,'0');
         return [
@@ -867,13 +843,15 @@
             [year+'-'+mm+'-09', 'New York', '13:45', 'USDJPY', 'Sell', 151.20, 151.60, 150.40, 0.15, 'SL'],
             [year+'-'+mm+'-14', 'Asian', '03:20', 'AUDUSD', 'Buy', 0.7700, 0.7670, 0.7750, 0.3, 'BE'],
             [year+'-'+mm+'-18', 'London', '09:50', 'USDCAD', 'Sell', 1.3820, 1.3850, 1.3770, 0.2, 'TP'],
-            [year+'-'+mm+'-24', 'New York', '15:10', 'XAUUSD', 'Buy', 2025.0, 2018.0, 2040.0, 0.05, 'BE']
+            [year+'-'+mm+'-24', 'New York', '15:10', 'XAUUSD', 'Buy', 2025.0, 2018.0, 2040.0, 0.05, 'BE'],
+            // Weekend trades
+            [year+'-'+mm+'-07', 'Asian', '10:00', 'EURUSD', 'Buy', 1.1500, 1.1480, 1.1550, 0.1, 'TP'],
+            [year+'-'+mm+'-08', 'London', '14:30', 'GBPUSD', 'Sell', 1.3600, 1.3630, 1.3550, 0.15, 'TP']
         ];
     }
     
     function generateSampleIncomes(year, month) {
         let mm = String(month + 1).padStart(2,'0');
-        // store in USD
         return [
             [year+'-'+mm+'-02', 250, 120, 0, 0],
             [year+'-'+mm+'-09', 0, 80, 400, 50],
@@ -883,7 +861,6 @@
     
     function generateSampleExpenses(year, month) {
         let mm = String(month + 1).padStart(2,'0');
-        // store in USD
         return [
             [year+'-'+mm+'-03', 'Software', 'TradingView subscription', 65],
             [year+'-'+mm+'-07', 'Equipment', 'New monitor', 320],
@@ -892,7 +869,6 @@
         ];
     }
 
-    // current year, month and week
     let currentYear = 2025;
     let currentMonth = new Date().getMonth();
     let currentWeek = 1;
@@ -915,18 +891,20 @@
     const addTradeBtn = document.getElementById('addTradeBtn');
     const addIncomeBtn = document.getElementById('addIncomeBtn');
     const addExpenseBtn = document.getElementById('addExpenseBtn');
+    const showAllTradesBtn = document.getElementById('showAllTradesBtn');
 
     let sessionChart, incomeChart, winLossChart;
 
     function updateMonthIndicators() {
         let monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
         let m = monthNames[currentMonth];
-        document.getElementById('tradeMonthIndicator').innerText = `${currentYear} · ${m} · Week ${currentWeek}`;
+        let weekDisplay = currentWeek === 'all' ? 'All Weeks' : `Week ${currentWeek}`;
+        document.getElementById('tradeMonthIndicator').innerText = `${currentYear} · ${m} · ${weekDisplay}`;
         document.getElementById('incomeMonthIndicator').innerText = `${currentYear} · ${m}`;
         document.getElementById('expenseMonthIndicator').innerText = `${currentYear} · ${m}`;
         document.getElementById('dashboardMonthIndicator').innerHTML = `Dashboard · Empire One FX · ${currentYear}`;
         document.getElementById('chartsMonthIndicator').innerHTML = `Performance Charts · ${currentYear} · Empire One FX`;
-        document.getElementById('reportMonthIndicator').innerHTML = `Weekly Report · ${currentYear} · ${m} · Week ${currentWeek}`;
+        document.getElementById('reportMonthIndicator').innerHTML = `Weekly Report · ${currentYear} · ${m} · ${weekDisplay}`;
     }
 
     function getDayOfWeek(dateStr) {
@@ -942,6 +920,10 @@
         let date = new Date(dateStr);
         if (isNaN(date)) return false;
         if (date.getFullYear() != year || date.getMonth() != month) return false;
+        
+        // If week is 'all', show all trades in the month
+        if (week === 'all') return true;
+        
         let day = date.getDate();
         let startDay = (week - 1) * 7 + 1;
         let endDay = week * 7;
@@ -952,7 +934,6 @@
 
     const exitTypeOptions = ['TP', 'SL', 'BE'];
 
-    // ================= CALCULATE P/L IN USD (always) =================
     function calculatePL(entry, sl, tp, type, exitType, lot, instrument) {
         if (!entry || !sl || !tp || !exitType) return 0;
         entry = parseFloat(entry) || 0;
@@ -968,7 +949,7 @@
         if (!isJpyPair) {
             let contractSize = 100000;
             if (instrument.includes('XAU') || instrument.includes('XAG') || instrument.includes('XPT') || instrument.includes('XPD')) {
-                contractSize = 100; // For metals
+                contractSize = 100;
             }
             if (type === 'Buy') {
                 profitUSD = (exitPrice - entry) * lot * contractSize;
@@ -976,20 +957,18 @@
                 profitUSD = (entry - exitPrice) * lot * contractSize;
             }
         } else {
-            // JPY pair: profit in JPY = priceDiff * lot * 100000 (since 1 pip = 0.01, 100k units)
             let priceDiff;
             if (type === 'Buy') priceDiff = exitPrice - entry;
             else priceDiff = entry - exitPrice;
             let profitJPY = priceDiff * lot * 100000;
             let usdJpyRate;
             if (instrument === 'USDJPY') usdJpyRate = exitPrice;
-            else if (instrument === 'EURJPY') usdJpyRate = 160.0; // Approximate rate for EUR/JPY
-            else if (instrument === 'GBPJPY') usdJpyRate = 190.0; // Approximate rate for GBP/JPY
-            else usdJpyRate = 150.0; // fallback for other JPY crosses
+            else if (instrument === 'EURJPY') usdJpyRate = 160.0;
+            else if (instrument === 'GBPJPY') usdJpyRate = 190.0;
+            else usdJpyRate = 150.0;
             profitUSD = profitJPY / usdJpyRate;
         }
-        
-        return profitUSD; // USD
+        return profitUSD;
     }
 
     function calculateRR(entry, sl, tp, type) {
@@ -1072,10 +1051,9 @@
         updateWeeklyReport();
     }
 
-    // ========== UPDATED WEEKLY REPORT WITH SEPARATE WINS/LOSSES ==========
     function updateWeeklyReport() {
         let trades = loadTrades(currentYear, currentMonth);
-        let weekTrades = trades.filter(t => isDateInWeek(t[0], currentYear, currentMonth, currentWeek));
+        let weekTrades = currentWeek === 'all' ? trades : trades.filter(t => isDateInWeek(t[0], currentYear, currentMonth, currentWeek));
         
         let dayData = {
             'Monday': { trades:0, wins:0, losses:0, plUSD:0 },
@@ -1091,7 +1069,9 @@
         
         weekTrades.forEach(t => {
             let day = getDayOfWeek(t[0]);
-            if (!dayData[day]) return;
+            if (!dayData[day]) {
+                dayData[day] = { trades:0, wins:0, losses:0, plUSD:0 };
+            }
             let plUSD = calculatePL(t[5], t[6], t[7], t[4], t[9]||'TP', t[8]||0.1, t[3]||'EURUSD');
             let exit = t[9] || 'TP';
             
@@ -1108,33 +1088,42 @@
             }
         });
 
-        // push to DOM per day (converted)
+        // Monday
         document.getElementById('monTrades').innerText = dayData['Monday'].trades;
         document.getElementById('monWins').innerText = dayData['Monday'].wins;
         document.getElementById('monLosses').innerText = dayData['Monday'].losses;
         document.getElementById('monPL').innerText = formatCurrency(convertFromUSD(dayData['Monday'].plUSD));
-
+        // Tuesday
         document.getElementById('tueTrades').innerText = dayData['Tuesday'].trades;
         document.getElementById('tueWins').innerText = dayData['Tuesday'].wins;
         document.getElementById('tueLosses').innerText = dayData['Tuesday'].losses;
         document.getElementById('tuePL').innerText = formatCurrency(convertFromUSD(dayData['Tuesday'].plUSD));
-
+        // Wednesday
         document.getElementById('wedTrades').innerText = dayData['Wednesday'].trades;
         document.getElementById('wedWins').innerText = dayData['Wednesday'].wins;
         document.getElementById('wedLosses').innerText = dayData['Wednesday'].losses;
         document.getElementById('wedPL').innerText = formatCurrency(convertFromUSD(dayData['Wednesday'].plUSD));
-
+        // Thursday
         document.getElementById('thuTrades').innerText = dayData['Thursday'].trades;
         document.getElementById('thuWins').innerText = dayData['Thursday'].wins;
         document.getElementById('thuLosses').innerText = dayData['Thursday'].losses;
         document.getElementById('thuPL').innerText = formatCurrency(convertFromUSD(dayData['Thursday'].plUSD));
-
+        // Friday
         document.getElementById('friTrades').innerText = dayData['Friday'].trades;
         document.getElementById('friWins').innerText = dayData['Friday'].wins;
         document.getElementById('friLosses').innerText = dayData['Friday'].losses;
         document.getElementById('friPL').innerText = formatCurrency(convertFromUSD(dayData['Friday'].plUSD));
+        // Saturday
+        document.getElementById('satTrades').innerText = dayData['Saturday'].trades;
+        document.getElementById('satWins').innerText = dayData['Saturday'].wins;
+        document.getElementById('satLosses').innerText = dayData['Saturday'].losses;
+        document.getElementById('satPL').innerText = formatCurrency(convertFromUSD(dayData['Saturday'].plUSD));
+        // Sunday
+        document.getElementById('sunTrades').innerText = dayData['Sunday'].trades;
+        document.getElementById('sunWins').innerText = dayData['Sunday'].wins;
+        document.getElementById('sunLosses').innerText = dayData['Sunday'].losses;
+        document.getElementById('sunPL').innerText = formatCurrency(convertFromUSD(dayData['Sunday'].plUSD));
 
-        // weekly summary
         let totalTrades = weekTrades.length;
         let winRate = totalTrades > 0 ? (totalWins / totalTrades * 100).toFixed(1) : 0;
         document.getElementById('weekTotalTrades2').innerText = totalTrades;
@@ -1156,7 +1145,6 @@
             let otherUSD = parseFloat(row[4]) || 0;
             let totalUSD = mentorshipUSD + signalsUSD + accountUSD + otherUSD;
             
-            // Convert stored USD values to current currency for display in inputs
             let mentorshipLocal = convertFromUSD(mentorshipUSD);
             let signalsLocal = convertFromUSD(signalsUSD);
             let accountLocal = convertFromUSD(accountUSD);
@@ -1165,7 +1153,6 @@
             html += '<tr>';
             html += `<td><input type="date" value="${date}" data-index="${idx}" data-field="date" class="income-input"></td>`;
             html += `<td>${getDayOfWeek(date)}</td>`;
-            // Show inputs in current currency with appropriate decimal places
             if (currentCurrency === 'USD') {
                 html += `<td><input type="number" step="0.1" value="${mentorshipLocal.toFixed(1)}" data-index="${idx}" data-field="inc1" class="income-input" placeholder="${currentCurrency}"></td>`;
                 html += `<td><input type="number" step="0.1" value="${signalsLocal.toFixed(1)}" data-index="${idx}" data-field="inc2" class="income-input" placeholder="${currentCurrency}"></td>`;
@@ -1177,7 +1164,6 @@
                 html += `<td><input type="number" step="1" value="${Math.round(accountLocal)}" data-index="${idx}" data-field="inc3" class="income-input" placeholder="${currentCurrency}"></td>`;
                 html += `<td><input type="number" step="1" value="${Math.round(otherLocal)}" data-index="${idx}" data-field="inc4" class="income-input" placeholder="${currentCurrency}"></td>`;
             }
-            // Display total in selected currency
             html += `<td>${formatCurrency(convertFromUSD(totalUSD))}</td>`;
             html += `<td><button class="delete-income" data-index="${idx}">✕</button></td></tr>`;
         });
@@ -1193,8 +1179,6 @@
             while (row.length < 4) row.push('');
             let date = row[0] || '', category = row[1] || 'Misc', desc = row[2] || '', amountUSD = parseFloat(row[3]) || 0;
             totalExpUSD += amountUSD;
-            
-            // Convert stored USD to current currency for display
             let amountLocal = convertFromUSD(amountUSD);
             
             html += '<tr>';
@@ -1202,7 +1186,6 @@
             html += `<td>${getDayOfWeek(date)}</td>`;
             html += `<td><input type="text" value="${category}" data-index="${idx}" data-field="expCat" class="expense-input" placeholder="category"></td>`;
             html += `<td><input type="text" value="${desc}" data-index="${idx}" data-field="expDesc" class="expense-input" placeholder="description"></td>`;
-            // Show amount input with appropriate decimal places
             if (currentCurrency === 'USD') {
                 html += `<td><input type="number" step="0.1" value="${amountLocal.toFixed(1)}" data-index="${idx}" data-field="expAmt" class="expense-input" placeholder="${currentCurrency}"></td>`;
             } else {
@@ -1263,7 +1246,6 @@
             else if(t[1]==='New York') nyUSD+=pl; 
         });
         
-        // Session Chart (converted)
         let sessionCtx = document.getElementById('sessionChart').getContext('2d');
         if(sessionChart) sessionChart.destroy();
         sessionChart = new Chart(sessionCtx, { 
@@ -1291,7 +1273,6 @@
             }
         });
         
-        // Income Chart (converted)
         let mentorshipUSD = incomes.reduce((acc, r) => acc + (parseFloat(r[1])||0),0);
         let signalsUSD = incomes.reduce((acc, r) => acc + (parseFloat(r[2])||0),0);
         let accountUSD = incomes.reduce((acc, r) => acc + (parseFloat(r[3])||0),0);
@@ -1324,7 +1305,6 @@
             }
         });
         
-        // Win/Loss Chart (counts unchanged)
         let wins=0, losses=0, breakevens=0;
         trades.forEach(t => { 
             if(t[9]==='TP') wins++; 
@@ -1359,13 +1339,11 @@
         updateCurrencyLabels();
     }
 
-    // ----- CURRENCY CHANGE HANDLER -----
     currencySelect.addEventListener('change', function(e) {
         currentCurrency = e.target.value;
         refreshAll();
     });
 
-    // attach listeners
     function attachTradeListeners() {
         document.querySelectorAll('.trade-input').forEach(el => { 
             el.removeEventListener('change', tradeChange); 
@@ -1429,7 +1407,6 @@
             incomes[idx][0] = input.value;
         } else {
             let col = parseInt(field.replace('inc','')) || 1;
-            // Get value in current currency and convert to USD for storage
             let localValue = parseFloat(input.value) || 0;
             incomes[idx][col] = convertToUSD(localValue);
         }
@@ -1469,7 +1446,6 @@
         else if(field === 'expCat') expenses[idx][1] = input.value;
         else if(field === 'expDesc') expenses[idx][2] = input.value;
         else if(field === 'expAmt') {
-            // Get value in current currency and convert to USD for storage
             let localValue = parseFloat(input.value) || 0;
             expenses[idx][3] = convertToUSD(localValue);
         }
@@ -1491,9 +1467,28 @@
         let trades = loadTrades(currentYear, currentMonth); 
         let today = new Date(); 
         let y = today.getFullYear(), m = String(today.getMonth()+1).padStart(2,'0'), d = String(today.getDate()).padStart(2,'0'); 
-        trades.push([y+'-'+m+'-'+d, 'Asian', '12:00', 'EURUSD', 'Buy', 1.08, 1.077, 1.086, 0.1, 'TP']); 
+        
+        // Create a new trade with today's date
+        let newTrade = [y+'-'+m+'-'+d, 'Asian', '12:00', 'EURUSD', 'Buy', 1.08, 1.077, 1.086, 0.1, 'TP'];
+        trades.push(newTrade); 
+        
         saveTrades(currentYear, currentMonth, trades); 
+        
+        // Calculate which week this new trade falls in
+        let tradeDate = new Date(y+'-'+m+'-'+d);
+        let tradeDay = tradeDate.getDate();
+        let weekNum = Math.ceil(tradeDay / 7);
+        let weeksInMonth = Math.ceil(new Date(currentYear, currentMonth + 1, 0).getDate() / 7);
+        weekNum = Math.min(weekNum, weeksInMonth);
+        
+        // Auto-switch to the week containing the new trade
+        currentWeek = weekNum;
+        document.getElementById('weekSelect').value = currentWeek;
+        
         refreshAll(); 
+        
+        // Show confirmation
+        alert(`✅ Trade added for ${y}-${m}-${d} (Week ${currentWeek})`);
     }
     
     function addQuickTrade() { 
@@ -1529,12 +1524,42 @@
             type = 'Buy'; 
         } 
         
-        trades.push([y+'-'+m+'-'+d, 'Asian', '12:00', instrument, type, entry, sl, tp, 0.1, 'TP']); 
+        let newTrade = [y+'-'+m+'-'+d, 'Asian', '12:00', instrument, type, entry, sl, tp, 0.1, 'TP'];
+        trades.push(newTrade); 
+        
         saveTrades(currentYear, currentMonth, trades); 
+        
+        // Calculate which week this new trade falls in
+        let tradeDate = new Date(y+'-'+m+'-'+d);
+        let tradeDay = tradeDate.getDate();
+        let weekNum = Math.ceil(tradeDay / 7);
+        let weeksInMonth = Math.ceil(new Date(currentYear, currentMonth + 1, 0).getDate() / 7);
+        weekNum = Math.min(weekNum, weeksInMonth);
+        
+        // Auto-switch to the week containing the new trade
+        currentWeek = weekNum;
+        document.getElementById('weekSelect').value = currentWeek;
+        
         refreshAll(); 
         instrumentSelector.value = ''; 
+        
+        // Show confirmation
+        alert(`✅ ${instrument} trade added for ${y}-${m}-${d} (Week ${currentWeek})`);
     }
     
+    function showAllTradesInMonth() {
+        currentWeek = 'all';
+        document.getElementById('weekSelect').value = 'all';
+        refreshAll();
+    }
+
+    // Add "All Weeks" option to week selector
+    let weekSelectElement = document.getElementById('weekSelect');
+    let allWeeksOption = document.createElement('option');
+    allWeeksOption.value = 'all';
+    allWeeksOption.text = '📅 All Weeks';
+    weekSelectElement.appendChild(allWeeksOption);
+
     function addIncome() { 
         let incomes = loadIncomes(currentYear, currentMonth); 
         let today = new Date(); 
@@ -1579,10 +1604,10 @@
 
     addQuickTradeBtn.addEventListener('click', addQuickTrade);
     addTradeBtn.addEventListener('click', addTrade);
+    showAllTradesBtn.addEventListener('click', showAllTradesInMonth);
     addIncomeBtn.addEventListener('click', addIncome);
     addExpenseBtn.addEventListener('click', addExpense);
 
-    // ========== FIXED IMPORT FUNCTION ==========
     function importFromExcel(e) { 
         const file = e.target.files[0];
         if (!file) return;
@@ -1593,112 +1618,102 @@
                 const data = new Uint8Array(e.target.result);
                 const workbook = XLSX.read(data, {type: 'array'});
                 
-                // Track what we imported
                 let tradesImported = 0;
                 let incomesImported = 0;
                 let expensesImported = 0;
                 
-                // Import Trades (Sheet 1)
+                let existingTrades = loadTrades(currentYear, currentMonth);
+                let existingIncomes = loadIncomes(currentYear, currentMonth);
+                let existingExpenses = loadExpenses(currentYear, currentMonth);
+                
                 if (workbook.SheetNames.length > 0) {
                     const tradesSheet = workbook.Sheets[workbook.SheetNames[0]];
                     const tradesData = XLSX.utils.sheet_to_json(tradesSheet, {header: 1, defval: ''});
                     
                     if (tradesData.length > 1) {
-                        const trades = [];
-                        // Check if this is a trades sheet (has expected headers)
+                        const newTrades = [];
                         const headers = tradesData[0] || [];
                         if (headers[0] === 'Date' && headers[3] === 'Instrument') {
                             for (let i = 1; i < tradesData.length; i++) {
                                 const row = tradesData[i];
                                 if (row && row.length >= 10) {
-                                    trades.push([
-                                        row[0] || '',                       // Date
-                                        row[1] || 'Asian',                  // Session
-                                        row[2] || '12:00',                  // Time
-                                        row[3] || 'EURUSD',                 // Instrument
-                                        row[4] || 'Buy',                    // Type
-                                        parseFloat(row[5]) || 0,            // Entry
-                                        parseFloat(row[6]) || 0,            // SL
-                                        parseFloat(row[7]) || 0,            // TP
-                                        parseFloat(row[8]) || 0.1,          // Lot
-                                        row[9] || 'TP'                       // Exit Type
+                                    newTrades.push([
+                                        row[0] || '', row[1] || 'Asian', row[2] || '12:00', row[3] || 'EURUSD',
+                                        row[4] || 'Buy', parseFloat(row[5]) || 0, parseFloat(row[6]) || 0,
+                                        parseFloat(row[7]) || 0, parseFloat(row[8]) || 0.1, row[9] || 'TP'
                                     ]);
                                 }
                             }
-                            if (trades.length > 0) {
-                                saveTrades(currentYear, currentMonth, trades);
-                                tradesImported = trades.length;
+                            if (newTrades.length > 0) {
+                                const mergedTrades = [...existingTrades, ...newTrades];
+                                saveTrades(currentYear, currentMonth, mergedTrades);
+                                tradesImported = newTrades.length;
                             }
                         }
                     }
                 }
                 
-                // Import Income (Sheet 2)
                 if (workbook.SheetNames.length > 1) {
                     const incomeSheet = workbook.Sheets[workbook.SheetNames[1]];
                     const incomeData = XLSX.utils.sheet_to_json(incomeSheet, {header: 1, defval: ''});
                     
                     if (incomeData.length > 1) {
-                        const incomes = [];
+                        const newIncomes = [];
                         const headers = incomeData[0] || [];
                         if (headers[0] === 'Date' && headers[1] && headers[1].includes('Mentorship')) {
                             for (let i = 1; i < incomeData.length; i++) {
                                 const row = incomeData[i];
                                 if (row && row.length >= 5) {
-                                    // Parse amounts - they're in USD in the export
-                                    incomes.push([
-                                        row[0] || '',                       // Date
-                                        parseFloat(row[1]) || 0,            // Mentorship (USD)
-                                        parseFloat(row[2]) || 0,            // Signals (USD)
-                                        parseFloat(row[3]) || 0,            // Account Mgmt (USD)
-                                        parseFloat(row[4]) || 0             // Other (USD)
+                                    newIncomes.push([
+                                        row[0] || '',
+                                        parseFloat(row[1]) || 0,
+                                        parseFloat(row[2]) || 0,
+                                        parseFloat(row[3]) || 0,
+                                        parseFloat(row[4]) || 0
                                     ]);
                                 }
                             }
-                            if (incomes.length > 0) {
-                                saveIncomes(currentYear, currentMonth, incomes);
-                                incomesImported = incomes.length;
+                            if (newIncomes.length > 0) {
+                                const mergedIncomes = [...existingIncomes, ...newIncomes];
+                                saveIncomes(currentYear, currentMonth, mergedIncomes);
+                                incomesImported = newIncomes.length;
                             }
                         }
                     }
                 }
                 
-                // Import Expenses (Sheet 3)
                 if (workbook.SheetNames.length > 2) {
                     const expensesSheet = workbook.Sheets[workbook.SheetNames[2]];
                     const expensesData = XLSX.utils.sheet_to_json(expensesSheet, {header: 1, defval: ''});
                     
                     if (expensesData.length > 1) {
-                        const expenses = [];
+                        const newExpenses = [];
                         const headers = expensesData[0] || [];
                         if (headers[0] === 'Date' && headers[1] === 'Category') {
                             for (let i = 1; i < expensesData.length; i++) {
                                 const row = expensesData[i];
                                 if (row && row.length >= 4) {
-                                    expenses.push([
-                                        row[0] || '',                       // Date
-                                        row[1] || 'Misc',                   // Category
-                                        row[2] || '',                        // Description
-                                        parseFloat(row[3]) || 0             // Amount (USD)
+                                    newExpenses.push([
+                                        row[0] || '', row[1] || 'Misc', row[2] || '', parseFloat(row[3]) || 0
                                     ]);
                                 }
                             }
-                            if (expenses.length > 0) {
-                                saveExpenses(currentYear, currentMonth, expenses);
-                                expensesImported = expenses.length;
+                            if (newExpenses.length > 0) {
+                                const mergedExpenses = [...existingExpenses, ...newExpenses];
+                                saveExpenses(currentYear, currentMonth, mergedExpenses);
+                                expensesImported = newExpenses.length;
                             }
                         }
                     }
                 }
                 
-                // Show summary of what was imported
                 let message = [];
                 if (tradesImported > 0) message.push(`${tradesImported} trades`);
                 if (incomesImported > 0) message.push(`${incomesImported} incomes`);
                 if (expensesImported > 0) message.push(`${expensesImported} expenses`);
                 
                 if (message.length > 0) {
-                    alert(`✅ Successfully imported: ${message.join(', ')}`);
+                    alert(`✅ Successfully imported: ${message.join(', ')} (added to existing data)`);
                 } else {
                     alert('No valid data found in the Excel file. Make sure it contains sheets with the correct headers.');
                 }
@@ -1737,7 +1752,11 @@
     });
     
     weekSelect.addEventListener('change', function() { 
-        currentWeek = parseInt(this.value,10); 
+        if (this.value === 'all') {
+            currentWeek = 'all';
+        } else {
+            currentWeek = parseInt(this.value,10);
+        }
         refreshAll(); 
     });
 
@@ -1748,7 +1767,6 @@
         let monthName = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][currentMonth];
         let wb = XLSX.utils.book_new();
         
-        // Trading sheet (export in USD, keep base)
         let tradingRows = [['Date','Session','Time','Instrument','Type','Entry','SL','TP','Lot','Exit Type','R:R','Pips','Result','P/L (USD)']];
         trades.forEach(row => { 
             let rr = calculateRR(row[5],row[6],row[7],row[4]); 
@@ -1760,7 +1778,6 @@
         let wsTrade = XLSX.utils.aoa_to_sheet(tradingRows);
         XLSX.utils.book_append_sheet(wb, wsTrade, `${currentYear} ${monthName} Trades`);
 
-        // Income sheet (export in USD with note about original currency)
         let incomeRows = [['Date','Mentorship (USD)','Signals (USD)','Account Mgmt (USD)','Other (USD)','Total (USD)', `Note: Original display currency was ${currentCurrency}`]];
         incomes.forEach(r => { 
             let mentorship = parseFloat(r[1]) || 0;
@@ -1773,7 +1790,6 @@
         let wsIncome = XLSX.utils.aoa_to_sheet(incomeRows);
         XLSX.utils.book_append_sheet(wb, wsIncome, `Income`);
 
-        // Expenses sheet (export in USD)
         let expenseRows = [['Date','Category','Description','Amount (USD)']];
         expenses.forEach(r => expenseRows.push([r[0], r[1], r[2], parseFloat(r[3]) || 0]));
         let wsExpense = XLSX.utils.aoa_to_sheet(expenseRows);
@@ -1782,7 +1798,17 @@
         XLSX.writeFile(wb, `Empire_One_FX_${currentYear}_${monthName}.xlsx`);
     });
 
-    // Initialize
+    // Initialize with sample data if empty
+    if (loadTrades(currentYear, currentMonth).length === 0) {
+        saveTrades(currentYear, currentMonth, generateSampleTrades(currentYear, currentMonth));
+    }
+    if (loadIncomes(currentYear, currentMonth).length === 0) {
+        saveIncomes(currentYear, currentMonth, generateSampleIncomes(currentYear, currentMonth));
+    }
+    if (loadExpenses(currentYear, currentMonth).length === 0) {
+        saveExpenses(currentYear, currentMonth, generateSampleExpenses(currentYear, currentMonth));
+    }
+
     updateCurrencyLabels();
     refreshAll();
 })();
