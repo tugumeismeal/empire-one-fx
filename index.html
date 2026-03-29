@@ -125,7 +125,8 @@
         .quick-add-panel { background: #f8f9fa; border-radius: 1rem; padding: 1rem; margin-bottom: 1.5rem; border: 1px solid #e4b363; }
         .weekly-summary-card { background: linear-gradient(135deg, #1e4663 0%, #0f2c42 100%); color: white; border-radius: 1.2rem; padding: 1.2rem; }
         .weekly-stat-number { font-size: 1.8rem; font-weight: 800; }
-        .day-performance { font-size: 0.9rem; }
+        .filter-active { background: #e4b36320; border-radius: 8px; padding: 2px 8px; font-size: 0.8rem; }
+        .active-filter-badge { background: #e4b363; color: #1e2f3a; border-radius: 20px; padding: 4px 12px; font-size: 0.8rem; font-weight: 600; }
     </style>
 </head>
 <body>
@@ -242,20 +243,21 @@
                     <div class="row g-3 mb-4">
                         <div class="col-md-3"><label class="fw-semibold">📆 Year</label><select id="tradeYear" class="form-select"></select></div>
                         <div class="col-md-3"><label class="fw-semibold">🗓️ Month</label><select id="tradeMonth" class="form-select"></select></div>
-                        <div class="col-md-3"><label class="fw-semibold">📅 Week</label><select id="tradeWeek" class="form-select"><option value="all">All Weeks</option><option value="1">Week 1</option><option value="2">Week 2</option><option value="3">Week 3</option><option value="4">Week 4</option><option value="5">Week 5</option></select></div>
+                        <div class="col-md-3"><label class="fw-semibold">📅 Week</label><select id="tradeWeek" class="form-select"><option value="all">All Weeks</option><option value="1">Week 1</option><option value="2">Week 2</option><option value="3">Week 3</option><option value="4">Week 4</option><option value="5">Week 5</option><option value="6">Week 6</option></select></div>
                         <div class="col-md-3"><button class="btn btn-gold w-100" id="addTradeBtn"><i class="bi bi-plus-circle"></i> Add Empty Trade</button></div>
                     </div>
                     <div class="table-responsive-custom">
                         <table class="table table-bordered align-middle mb-0">
-                            <thead class="table-dark"> <tr><th>Date</th><th>Day</th><th>Session</th><th>Instrument</th><th>Type</th><th>Entry</th><th>SL</th><th>TP</th><th>Lot</th><th>Exit</th><th>R:R</th><th>Pips</th><th>Result</th><th>P/L</th><th></th></tr> </thead>
+                            <thead class="table-dark">  …
+<th>Date</th><th>Day</th><th>Session</th><th>Instrument</th><th>Type</th><th>Entry</th><th>SL</th><th>TP</th><th>Lot</th><th>Exit</th><th>R:R</th><th>Pips</th><th>Result</th><th>P/L</th><th></th> </tr</thead>
                             <tbody id="tradingTableBody"></tbody>
-                        </table>
+                         </table>
                     </div>
                     <div class="mt-3 d-flex gap-2"><button class="btn btn-sm btn-outline-secondary" id="importExcelBtn"><i class="bi bi-upload"></i> Import Excel</button><button class="btn btn-sm btn-success" id="exportExcelBtn"><i class="bi bi-download"></i> Export XLSX</button><input type="file" id="excelFileInput" accept=".xlsx,.xls" style="display:none;"></div>
                 </div>
             </div>
             
-            <!-- FIXED WEEKLY REPORT SECTION - COMPREHENSIVE -->
+            <!-- WEEKLY REPORT SECTION -->
             <div class="tab-pane fade" id="weeklyTab">
                 <div class="sheet-card" id="weeklyReportContainer">
                     <div class="text-center py-5">Loading weekly report...</div>
@@ -265,14 +267,16 @@
             <div class="tab-pane fade" id="incomeTab">
                 <div class="sheet-card">
                     <div class="d-flex justify-content-between mb-3"><h5>💰 Income Entries</h5><button class="btn btn-gold btn-sm" id="addIncomeBtn">+ Add Income</button></div>
-                    <div class="table-responsive"><table class="table table-bordered"><thead class="table-dark"><tr><th>Date</th><th>Day</th><th>Category</th><th>Description</th><th>Amount</th><th></th></tr></thead><tbody id="incomeTableBody"></tbody></table></div>
+                    <div class="table-responsive"><table class="table table-bordered"><thead class="table-dark"> …
+<th>Date</th><th>Day</th><th>Category</th><th>Description</th><th>Amount</th><th></th> </tr</thead><tbody id="incomeTableBody"></tbody> </table></div>
                     <div class="mt-3 text-end fw-bold">Total Income: <span id="totalIncomeSpan" class="text-success">0</span></div>
                 </div>
             </div>
             
             <div class="tab-pane fade" id="expenseTab">
                 <div class="sheet-card"><div class="d-flex justify-content-between mb-3"><h5>💸 Expense Log</h5><button class="btn btn-gold btn-sm" id="addExpenseBtn">+ Add Expense</button></div>
-                <div class="table-responsive"><table class="table table-bordered"><thead class="table-dark"><tr><th>Date</th><th>Day</th><th>Category</th><th>Description</th><th>Amount</th><th></th></tr></thead><tbody id="expenseTableBody"></tbody></table></div>
+                <div class="table-responsive"><table class="table table-bordered"><thead class="table-dark"> …
+<th>Date</th><th>Day</th><th>Category</th><th>Description</th><th>Amount</th><th></th> </tr</thead><tbody id="expenseTableBody"></tbody> </table></div>
                 <div class="mt-3 text-end fw-bold">Total Expenses: <span id="totalExpenseSpan" class="text-danger">0</span></div></div>
             </div>
             
@@ -308,26 +312,62 @@
     function convertToUSD(local) { let rate = exchangeRates[currentCurrency] || 1; return local / rate; }
     function formatCurrency(amt) { let sym = { USD:'$', UGX:'USh ', KES:'KSh ', ZAR:'R ', GBP:'£', EUR:'€' }[currentCurrency]; let val = amt.toFixed(currentCurrency==='USD'?1:0); return sym + val.replace(/\B(?=(\d{3})+(?!\d))/g, ','); }
     
+    // DATA STORAGE - stores by ACTUAL trade date year/month, not filter year/month
     function getKey(prefix, year, month) { return `empire_${prefix}_${year}_${month}`; }
     function loadData(prefix, year, month) { let raw = localStorage.getItem(getKey(prefix, year, month)); return raw ? JSON.parse(raw) : []; }
     function saveData(prefix, year, month, data) { if (currentUserRole !== 'admin') return false; localStorage.setItem(getKey(prefix, year, month), JSON.stringify(data)); return true; }
     
-    let currentYear = 2025, currentMonth = new Date().getMonth(), currentWeek = 'all';
+    // FILTER STATE - these control what we DISPLAY (not where we save)
+    let filterYear = 2025;
+    let filterMonth = new Date().getMonth();
+    let filterWeek = 'all';
+    
     let sessionChart, incomeChart, winLossChart;
     const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
     const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
     
     function getDayOfWeek(dateStr) { if(!dateStr) return ''; let d=new Date(dateStr); return isNaN(d)?'':dayNames[d.getDay()]; }
-    function getWeekNumber(dateStr) { let d=new Date(dateStr); let start=new Date(d.getFullYear(),0,1); let days=Math.floor((d-start)/86400000); return Math.ceil((days+start.getDay()+1)/7); }
-    function isDateInWeek(dateStr, year, month, week) { 
-        if(week==='all') return true; 
-        let d=new Date(dateStr); 
-        if(d.getFullYear()!=year || d.getMonth()!=month) return false; 
-        let day=d.getDate(); 
-        let start=(week-1)*7+1, end=week*7, daysInMonth=new Date(year,month+1,0).getDate(); 
-        end=Math.min(end,daysInMonth); 
-        return day>=start && day<=end; 
+    
+    // ACCURATE WEEK OF MONTH calculation based on actual date
+    function getWeekOfMonth(dateStr) {
+        let d = new Date(dateStr);
+        let firstDayOfMonth = new Date(d.getFullYear(), d.getMonth(), 1);
+        let firstWeekday = firstDayOfMonth.getDay();
+        let adjustedFirstWeekday = firstWeekday === 0 ? 6 : firstWeekday - 1;
+        let dayOfMonth = d.getDate();
+        let weekNum = Math.ceil((dayOfMonth + adjustedFirstWeekday) / 7);
+        return weekNum;
     }
+    
+    // Check if a trade date matches the current filters
+    function matchesFilters(tradeDate) {
+        let d = new Date(tradeDate);
+        if (isNaN(d.getTime())) return false;
+        
+        // Check year and month match
+        if (d.getFullYear() !== filterYear) return false;
+        if (d.getMonth() !== filterMonth) return false;
+        
+        // Check week
+        if (filterWeek === 'all') return true;
+        let tradeWeek = getWeekOfMonth(tradeDate);
+        return tradeWeek === parseInt(filterWeek);
+    }
+    
+    // Get ALL trades from ALL storage months/years that match current filters
+    function getAllTradesMatchingFilters() {
+        let allTrades = [];
+        // We need to check multiple year/month combinations because trades could be in different storage buckets
+        // But since our filter is specific year/month, we only load that specific storage
+        let trades = loadData('trades', filterYear, filterMonth);
+        return trades.filter(t => matchesFilters(t[0]));
+    }
+    
+    // Get trades for a specific storage year/month (for editing/saving)
+    function getTradesByStorage(year, month) {
+        return loadData('trades', year, month);
+    }
+    
     function canEdit() { return currentUserRole === 'admin'; }
     
     function calculatePL(entry, sl, tp, type, exitType, lot, instrument) { 
@@ -351,182 +391,46 @@
         return profitUSD; 
     }
     function determineResult(exitType) { if(exitType==='TP') return 'Win'; if(exitType==='SL') return 'Loss'; if(exitType==='BE') return 'Breakeven'; return 'Pending'; }
-    
-    function renderAll() { if(!currentUser) return; renderTradingTable(); renderWeeklyReport(); renderIncomeTable(); renderExpenseTable(); renderDashboard(); renderCharts(); }
-    
-    // ========== FIXED WEEKLY REPORT - COMPREHENSIVE ==========
-    function renderWeeklyReport() {
-        let trades = loadData('trades', currentYear, currentMonth);
-        let filteredTrades = trades.filter(t => isDateInWeek(t[0], currentYear, currentMonth, currentWeek));
-        
-        // Group by day of week
-        let dailyStats = {};
-        dayNames.forEach(day => { dailyStats[day] = { trades: 0, wins: 0, losses: 0, be: 0, plUSD: 0, pips: 0 }; });
-        
-        filteredTrades.forEach(t => {
-            let date = t[0];
-            let day = getDayOfWeek(date);
-            let type = t[3];
-            let entry = t[4] || 0, sl = t[5] || 0, tp = t[6] || 0, lot = t[7] || 0.1, exitType = t[8] || 'TP';
-            let instrument = t[2] || 'EURUSD';
-            let plUSD = calculatePL(entry, sl, tp, type, exitType, lot, instrument);
-            
-            // Calculate pips
-            let pip = (instrument.includes('JPY') ? 0.01 : 0.0001);
-            if(instrument.includes('XAU')) pip = 0.01;
-            if(instrument.includes('BTC')) pip = 1;
-            let pips = Math.abs((type === 'Buy' ? tp - entry : entry - tp) / pip);
-            
-            if(dailyStats[day]) {
-                dailyStats[day].trades++;
-                dailyStats[day].plUSD += plUSD;
-                dailyStats[day].pips += pips;
-                if(exitType === 'TP') dailyStats[day].wins++;
-                else if(exitType === 'SL') dailyStats[day].losses++;
-                else if(exitType === 'BE') dailyStats[day].be++;
-            }
-        });
-        
-        // Calculate totals
-        let totalTrades = filteredTrades.length;
-        let totalWins = filteredTrades.filter(t => t[8] === 'TP').length;
-        let totalLosses = filteredTrades.filter(t => t[8] === 'SL').length;
-        let totalBE = filteredTrades.filter(t => t[8] === 'BE').length;
-        let totalPLUSD = filteredTrades.reduce((sum, t) => sum + calculatePL(t[4], t[5], t[6], t[3], t[8] || 'TP', t[7] || 0.1, t[2]), 0);
-        let winRate = totalTrades ? ((totalWins / totalTrades) * 100).toFixed(1) : 0;
-        
-        // Generate daily cards
-        let dailyCards = '';
-        let orderedDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-        orderedDays.forEach(day => {
-            let stats = dailyStats[day];
-            if(stats.trades > 0 || true) { // Show all days with stats
-                let plClass = stats.plUSD >= 0 ? 'profit-text' : 'loss-text';
-                let plColor = stats.plUSD >= 0 ? '#10b981' : '#ef4444';
-                dailyCards += `
-                    <div class="col-md-3 col-lg-2 mb-3">
-                        <div class="week-card">
-                            <strong class="fs-6">${day}</strong>
-                            <div class="mt-2"><span class="badge bg-secondary">${stats.trades} trades</span></div>
-                            <div class="d-flex gap-2 mt-1">
-                                <span class="badge bg-success">W:${stats.wins}</span>
-                                <span class="badge bg-danger">L:${stats.losses}</span>
-                                <span class="badge bg-secondary">BE:${stats.be}</span>
-                            </div>
-                            <div class="mt-2 fw-bold" style="color: ${plColor}">${formatCurrency(convertFromUSD(stats.plUSD))}</div>
-                            <small class="text-muted">${stats.pips.toFixed(1)} pips</small>
-                        </div>
-                    </div>
-                `;
-            }
-        });
-        
-        let weekLabel = currentWeek === 'all' ? 'ALL WEEKS' : `WEEK ${currentWeek}`;
-        let plClassTotal = totalPLUSD >= 0 ? 'profit-text' : 'loss-text';
-        
-        let html = `
-            <div class="mb-4">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h4><i class="bi bi-calendar-week text-warning"></i> Weekly Performance Report - ${monthNames[currentMonth]} ${currentYear} (${weekLabel})</h4>
-                    <div class="dropdown">
-                        <button class="btn btn-outline-gold btn-sm dropdown-toggle" data-bs-toggle="dropdown">Export Report</button>
-                        <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="#" id="exportWeeklyPDF">📄 Copy Summary</a></li>
-                        </ul>
-                    </div>
-                </div>
-                
-                <!-- Summary Stats -->
-                <div class="row g-3 mb-4">
-                    <div class="col-md-3">
-                        <div class="weekly-summary-card text-center">
-                            <div class="stat-label text-white-50">Total Trades</div>
-                            <div class="weekly-stat-number">${totalTrades}</div>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="weekly-summary-card text-center">
-                            <div class="stat-label text-white-50">Win / Loss</div>
-                            <div class="weekly-stat-number">${totalWins} / ${totalLosses}</div>
-                            <small>BE: ${totalBE}</small>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="weekly-summary-card text-center">
-                            <div class="stat-label text-white-50">Win Rate</div>
-                            <div class="weekly-stat-number">${winRate}%</div>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="weekly-summary-card text-center">
-                            <div class="stat-label text-white-50">Net P&L</div>
-                            <div class="weekly-stat-number ${plClassTotal}">${formatCurrency(convertFromUSD(totalPLUSD))}</div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Daily Breakdown -->
-                <h5 class="mt-4 mb-3"><i class="bi bi-calendar-day"></i> Daily Performance</h5>
-                <div class="row">
-                    ${dailyCards || '<div class="col-12 text-center text-muted py-4">No trades recorded for this week</div>'}
-                </div>
-                
-                <!-- Trade List for the Week -->
-                <h5 class="mt-4 mb-3"><i class="bi bi-list-ul"></i> Weekly Trade Details</h5>
-                <div class="table-responsive">
-                    <table class="table table-sm table-bordered">
-                        <thead class="table-dark">
-                            <tr><th>Date</th><th>Day</th><th>Instrument</th><th>Type</th><th>Entry</th><th>Exit</th><th>Lot</th><th>Result</th><th>P/L</th></tr>
-                        </thead>
-                        <tbody>
-                            ${filteredTrades.length > 0 ? filteredTrades.map(t => {
-                                let plUSD = calculatePL(t[4], t[5], t[6], t[3], t[8] || 'TP', t[7] || 0.1, t[2]);
-                                let result = determineResult(t[8] || 'TP');
-                                let resultClass = result === 'Win' ? 'profit-text' : (result === 'Loss' ? 'loss-text' : 'breakeven-text');
-                                return `<tr>
-                                    <td>${t[0] || ''}</td>
-                                    <td>${getDayOfWeek(t[0])}</td>
-                                    <td>${t[2] || 'EURUSD'}</td>
-                                    <td>${t[3] || 'Buy'}</td>
-                                    <td>${t[4] || 0}</td>
-                                    <td>${t[8] === 'TP' ? (t[6] || 0) : (t[8] === 'SL' ? (t[5] || 0) : 'BE')}</td>
-                                    <td>${t[7] || 0.1}</td>
-                                    <td class="${resultClass}">${result}</td>
-                                    <td class="${plUSD >= 0 ? 'profit-text' : 'loss-text'}">${formatCurrency(convertFromUSD(plUSD))}</td>
-                                </tr>`;
-                            }).join('') : '<tr><td colspan="9" class="text-center text-muted">No trades this week</td></tr>'}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        `;
-        
-        document.getElementById('weeklyReportContainer').innerHTML = html;
-        
-        // Export handler
-        document.getElementById('exportWeeklyPDF')?.addEventListener('click', (e) => {
-            e.preventDefault();
-            let text = `Weekly Report - ${monthNames[currentMonth]} ${currentYear} (Week ${currentWeek})\n`;
-            text += `Total Trades: ${totalTrades} | Wins: ${totalWins} | Losses: ${totalLosses} | Win Rate: ${winRate}%\n`;
-            text += `Net P&L: ${formatCurrency(convertFromUSD(totalPLUSD))}\n`;
-            navigator.clipboard.writeText(text);
-            alert('Summary copied to clipboard!');
-        });
+    function computePips(entry, tp, type, instr) { 
+        let pip = (instr.includes('JPY') ? 0.01 : 0.0001);
+        if(instr.includes('XAU')) pip = 0.01;
+        if(instr.includes('BTC')) pip = 1;
+        return Math.abs((type === 'Buy' ? tp - entry : entry - tp) / pip).toFixed(1);
+    }
+    function computeRR(entry, sl, tp, type) { 
+        if(!entry||!sl||!tp) return ''; 
+        let risk = type==='Buy'?entry-sl:sl-entry; 
+        let reward = type==='Buy'?tp-entry:entry-tp; 
+        if(risk<=0) return ''; 
+        return (reward/risk).toFixed(2); 
     }
     
-    // ========== SIMPLIFIED TRADING TABLE (keeping functionality) ==========
+    function renderAll() { 
+        if(!currentUser) return; 
+        renderTradingTable(); 
+        renderWeeklyReport(); 
+        renderIncomeTable(); 
+        renderExpenseTable(); 
+        renderDashboard(); 
+        renderCharts(); 
+    }
+    
+    // RENDER TRADING TABLE - shows trades matching current filters
     function renderTradingTable() {
-        let trades = loadData('trades', currentYear, currentMonth);
-        let html = ''; const isAdmin = canEdit();
-        trades.forEach((t, idx) => {
+        let allFilteredTrades = getAllTradesMatchingFilters();
+        let html = ''; 
+        const isAdmin = canEdit();
+        
+        allFilteredTrades.forEach((t, idx) => {
             let date=t[0]||'', day=getDayOfWeek(date), session=t[1]||'Asian', instr=t[2]||'EURUSD', type=t[3]||'Buy', entry=t[4]||0, sl=t[5]||0, tp=t[6]||0, lot=t[7]||0.1, exitType=t[8]||'TP';
             let plUSD=calculatePL(entry,sl,tp,type,exitType,lot,instr);
             let plLocal=convertFromUSD(plUSD);
             let result=determineResult(exitType);
             let resultClass = exitType==='TP'?'profit-text':(exitType==='SL'?'loss-text':'breakeven-text');
-            let visible = isDateInWeek(date, currentYear, currentMonth, currentWeek) ? '' : 'style="display:none"';
             let disabledAttr = isAdmin ? '' : 'disabled';
-            html += `<tr ${visible} data-idx="${idx}">`;
+            let rr = computeRR(entry, sl, tp, type);
+            let pips = computePips(entry, tp, type, instr);
+            html += `<tr data-idx="${idx}" data-date="${date}">`;
             html += `<td><input type="date" class="form-control form-control-sm trade-edit" data-field="date" value="${date}" ${disabledAttr}>`;
             html += `<td>${day}<td><select class="form-select form-select-sm trade-edit" data-field="session" ${disabledAttr}><option ${session==='Asian'?'selected':''}>Asian</option><option ${session==='London'?'selected':''}>London</option><option ${session==='New York'?'selected':''}>New York</option></select>`;
             html += `<td><input class="form-control form-control-sm trade-edit" data-field="instrument" value="${instr}" ${disabledAttr}>`;
@@ -536,41 +440,338 @@
             html += `<td><input class="form-control form-control-sm trade-edit" data-field="tp" value="${tp}" ${disabledAttr}>`;
             html += `<td><input class="form-control form-control-sm trade-edit" data-field="lot" value="${lot}" ${disabledAttr}>`;
             html += `<td><select class="form-select form-select-sm trade-edit" data-field="exitType" ${disabledAttr}><option ${exitType==='TP'?'selected':''}>TP</option><option ${exitType==='SL'?'selected':''}>SL</option><option ${exitType==='BE'?'selected':''}>BE</option></select>`;
-            html += `<td class="small">${((type==='Buy'?(tp-entry):(entry-tp))/(type==='Buy'?(entry-sl):(sl-entry))||0).toFixed(2)}`;
-            html += `<td class="small">${((type==='Buy'?tp-entry:entry-tp)/(instr.includes('JPY')?0.01:0.0001)).toFixed(1)}`;
+            html += `<td class="small">${rr}<td class="small">${pips}`;
             html += `<td><span class="${resultClass.replace('text', 'badge')}">${result}</span>`;
             html += `<td class="${exitType==='TP'?'profit-text':exitType==='SL'?'loss-text':'breakeven-text'} fw-bold">${formatCurrency(plLocal)}`;
-            html += `<td>${isAdmin ? `<i class="bi bi-trash3 delete-icon" data-delete="trade" data-idx="${idx}"></i>` : '🔒'}`;
+            html += `<td>${isAdmin ? `<i class="bi bi-trash3 delete-icon" data-delete="trade" data-date="${date}" data-idx="${idx}"></i>` : '🔒'}`;
         });
         document.getElementById('tradingTableBody').innerHTML = html;
         if(isAdmin) attachTradeEvents();
     }
+    
     function attachTradeEvents() { 
         document.querySelectorAll('.trade-edit').forEach(el => { el.removeEventListener('change', handleTradeChange); el.addEventListener('change', handleTradeChange); });
-        document.querySelectorAll('[data-delete="trade"]').forEach(btn => { btn.onclick = () => { let idx = btn.getAttribute('data-idx'); if(idx!==null && canEdit()) { let trades = loadData('trades', currentYear, currentMonth); trades.splice(idx,1); saveData('trades', currentYear, currentMonth, trades); renderAll(); } }; });
+        document.querySelectorAll('[data-delete="trade"]').forEach(btn => { 
+            btn.onclick = () => { 
+                if(!canEdit()) return; 
+                let tradeDate = btn.getAttribute('data-date');
+                let idx = parseInt(btn.getAttribute('data-idx'));
+                if(tradeDate && !isNaN(idx)) {
+                    let d = new Date(tradeDate);
+                    let year = d.getFullYear();
+                    let month = d.getMonth();
+                    let trades = loadData('trades', year, month);
+                    trades.splice(idx, 1);
+                    saveData('trades', year, month, trades);
+                    renderAll();
+                }
+            }; 
+        });
     }
-    function handleTradeChange(e) { if(!canEdit()) return; let row = e.target.closest('tr'); let idx = row.getAttribute('data-idx'); if(idx===null) return; let field = e.target.getAttribute('data-field'); let trades = loadData('trades', currentYear, currentMonth); if(!trades[idx]) return; let val = e.target.value; if(field==='date') trades[idx][0]=val; else if(field==='session') trades[idx][1]=val; else if(field==='instrument') trades[idx][2]=val; else if(field==='type') trades[idx][3]=val; else if(field==='entry') trades[idx][4]=parseFloat(val)||0; else if(field==='sl') trades[idx][5]=parseFloat(val)||0; else if(field==='tp') trades[idx][6]=parseFloat(val)||0; else if(field==='lot') trades[idx][7]=parseFloat(val)||0.1; else if(field==='exitType') trades[idx][8]=val; saveData('trades', currentYear, currentMonth, trades); renderAll(); }
     
-    function renderIncomeTable() { let incomes = loadData('incomes', currentYear, currentMonth); let totalLocal=0, html=''; const isAdmin=canEdit(); incomes.forEach((inc,idx)=>{ let date=inc[0]||'', cat=inc[1]||'Mentorship', desc=inc[2]||'', amtUSD=inc[3]||0, amtLocal=convertFromUSD(amtUSD); totalLocal+=amtLocal; html+=`<tr><td><input type="date" class="form-control form-control-sm income-edit" data-field="date" value="${date}" ${isAdmin?'':'disabled'}><td>${getDayOfWeek(date)}<td><select class="form-select form-select-sm income-edit" data-field="category" ${isAdmin?'':'disabled'}><option ${cat==='Mentorship'?'selected':''}>Mentorship</option><option ${cat==='Signals'?'selected':''}>Signals</option><option ${cat==='Account Mgmt'?'selected':''}>Account Mgmt</option><option ${cat==='Other'?'selected':''}>Other</option></select><td><input class="form-control form-control-sm income-edit" data-field="description" value="${desc}" ${isAdmin?'':'disabled'}><td><input class="form-control form-control-sm income-edit" data-field="amount" value="${currentCurrency==='USD'?amtLocal.toFixed(1):Math.round(amtLocal)}" ${isAdmin?'':'disabled'}><td>${isAdmin?`<i class="bi bi-trash3 delete-icon" data-delete="income" data-idx="${idx}"></i>`:'🔒'}`; }); document.getElementById('incomeTableBody').innerHTML = html; document.getElementById('totalIncomeSpan').innerHTML = formatCurrency(totalLocal); if(isAdmin) attachIncomeEvents(); }
-    function attachIncomeEvents() { document.querySelectorAll('.income-edit').forEach(el=>{ el.onchange=()=>{ if(!canEdit()) return; let row=el.closest('tr'), idx=row.getAttribute('data-idx'), field=el.getAttribute('data-field'); let incomes=loadData('incomes',currentYear,currentMonth); if(!incomes[idx]) incomes[idx]=['','Mentorship','',0]; if(field==='date') incomes[idx][0]=el.value; else if(field==='category') incomes[idx][1]=el.value; else if(field==='description') incomes[idx][2]=el.value; else if(field==='amount') incomes[idx][3]=convertToUSD(parseFloat(el.value)||0); saveData('incomes',currentYear,currentMonth,incomes); renderAll(); }; }); document.querySelectorAll('[data-delete="income"]').forEach(btn=>{ btn.onclick=()=>{ if(!canEdit()) return; let idx=btn.getAttribute('data-idx'); let incomes=loadData('incomes',currentYear,currentMonth); incomes.splice(idx,1); saveData('incomes',currentYear,currentMonth,incomes); renderAll(); }; }); }
+    function handleTradeChange(e) { 
+        if(!canEdit()) return; 
+        let row = e.target.closest('tr'); 
+        let oldDate = row.getAttribute('data-date');
+        let idx = parseInt(row.getAttribute('data-idx'));
+        if(isNaN(idx) || !oldDate) return;
+        
+        let field = e.target.getAttribute('data-field'); 
+        let val = e.target.value;
+        
+        // Get old storage location
+        let oldDateObj = new Date(oldDate);
+        let oldYear = oldDateObj.getFullYear();
+        let oldMonth = oldDateObj.getMonth();
+        let trades = loadData('trades', oldYear, oldMonth);
+        if(!trades[idx]) return;
+        
+        // Update the trade data
+        if(field==='date') trades[idx][0]=val;
+        else if(field==='session') trades[idx][1]=val;
+        else if(field==='instrument') trades[idx][2]=val;
+        else if(field==='type') trades[idx][3]=val;
+        else if(field==='entry') trades[idx][4]=parseFloat(val)||0;
+        else if(field==='sl') trades[idx][5]=parseFloat(val)||0;
+        else if(field==='tp') trades[idx][6]=parseFloat(val)||0;
+        else if(field==='lot') trades[idx][7]=parseFloat(val)||0.1;
+        else if(field==='exitType') trades[idx][8]=val;
+        
+        // Check if date changed - need to move to different storage
+        if(field === 'date') {
+            let newDateObj = new Date(val);
+            let newYear = newDateObj.getFullYear();
+            let newMonth = newDateObj.getMonth();
+            
+            if(newYear !== oldYear || newMonth !== oldMonth) {
+                // Remove from old storage
+                let movedTrade = trades.splice(idx, 1)[0];
+                saveData('trades', oldYear, oldMonth, trades);
+                // Add to new storage
+                let newTrades = loadData('trades', newYear, newMonth);
+                newTrades.push(movedTrade);
+                saveData('trades', newYear, newMonth, newTrades);
+            } else {
+                saveData('trades', oldYear, oldMonth, trades);
+            }
+        } else {
+            saveData('trades', oldYear, oldMonth, trades);
+        }
+        renderAll(); 
+    }
     
-    function renderExpenseTable() { let expenses = loadData('expenses', currentYear, currentMonth); let totalLocal=0, html=''; const isAdmin=canEdit(); expenses.forEach((exp,idx)=>{ let date=exp[0]||'', cat=exp[1]||'Misc', desc=exp[2]||'', amtUSD=exp[3]||0, amtLocal=convertFromUSD(amtUSD); totalLocal+=amtLocal; html+=`<tr><td><input type="date" class="form-control form-control-sm expense-edit" data-field="date" value="${date}" ${isAdmin?'':'disabled'}><td>${getDayOfWeek(date)}<td><input class="form-control form-control-sm expense-edit" data-field="cat" value="${cat}" ${isAdmin?'':'disabled'}><td><input class="form-control form-control-sm expense-edit" data-field="desc" value="${desc}" ${isAdmin?'':'disabled'}><td><input class="form-control form-control-sm expense-edit" data-field="amt" value="${currentCurrency==='USD'?amtLocal.toFixed(1):Math.round(amtLocal)}" ${isAdmin?'':'disabled'}><td>${isAdmin?`<i class="bi bi-trash3 delete-icon" data-delete="expense" data-idx="${idx}"></i>`:'🔒'}`; }); document.getElementById('expenseTableBody').innerHTML = html; document.getElementById('totalExpenseSpan').innerHTML = formatCurrency(totalLocal); if(isAdmin) attachExpenseEvents(); }
-    function attachExpenseEvents() { document.querySelectorAll('.expense-edit').forEach(el=>{ el.onchange=()=>{ if(!canEdit()) return; let row=el.closest('tr'), idx=row.getAttribute('data-idx'), field=el.getAttribute('data-field'); let expenses=loadData('expenses',currentYear,currentMonth); if(!expenses[idx]) expenses[idx]=['','','',0]; if(field==='date') expenses[idx][0]=el.value; else if(field==='cat') expenses[idx][1]=el.value; else if(field==='desc') expenses[idx][2]=el.value; else if(field==='amt') expenses[idx][3]=convertToUSD(parseFloat(el.value)||0); saveData('expenses',currentYear,currentMonth,expenses); renderAll(); }; }); document.querySelectorAll('[data-delete="expense"]').forEach(btn=>{ btn.onclick=()=>{ if(!canEdit()) return; let idx=btn.getAttribute('data-idx'); let expenses=loadData('expenses',currentYear,currentMonth); expenses.splice(idx,1); saveData('expenses',currentYear,currentMonth,expenses); renderAll(); }; }); }
+    // WEEKLY REPORT - uses filtered trades
+    function renderWeeklyReport() {
+        let filteredTrades = getAllTradesMatchingFilters();
+        
+        let totalTrades = filteredTrades.length;
+        let totalWins = filteredTrades.filter(t => t[8] === 'TP').length;
+        let totalLosses = filteredTrades.filter(t => t[8] === 'SL').length;
+        let totalBE = filteredTrades.filter(t => t[8] === 'BE').length;
+        let totalPLUSD = filteredTrades.reduce((sum, t) => sum + calculatePL(t[4], t[5], t[6], t[3], t[8] || 'TP', t[7] || 0.1, t[2]), 0);
+        let winRate = totalTrades ? ((totalWins / totalTrades) * 100).toFixed(1) : 0;
+        
+        let weekLabel = filterWeek === 'all' ? 'ALL WEEKS' : `WEEK ${filterWeek}`;
+        let plClassTotal = totalPLUSD >= 0 ? 'profit-text' : 'loss-text';
+        
+        // Group by day for daily breakdown
+        let dailyStats = {};
+        dayNames.forEach(day => { dailyStats[day] = { trades: 0, wins: 0, losses: 0, plUSD: 0 }; });
+        filteredTrades.forEach(t => {
+            let day = getDayOfWeek(t[0]);
+            let plUSD = calculatePL(t[4], t[5], t[6], t[3], t[8] || 'TP', t[7] || 0.1, t[2]);
+            if(dailyStats[day]) {
+                dailyStats[day].trades++;
+                dailyStats[day].plUSD += plUSD;
+                if(t[8] === 'TP') dailyStats[day].wins++;
+                else if(t[8] === 'SL') dailyStats[day].losses++;
+            }
+        });
+        
+        let dailyCards = '';
+        let orderedDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+        orderedDays.forEach(day => {
+            let stats = dailyStats[day];
+            let plColor = stats.plUSD >= 0 ? '#10b981' : '#ef4444';
+            dailyCards += `
+                <div class="col-md-3 col-lg-2 mb-3">
+                    <div class="week-card">
+                        <strong class="fs-6">${day}</strong>
+                        <div class="mt-2"><span class="badge bg-secondary">${stats.trades} trades</span></div>
+                        <div class="d-flex gap-2 mt-1">
+                            <span class="badge bg-success">W:${stats.wins}</span>
+                            <span class="badge bg-danger">L:${stats.losses}</span>
+                        </div>
+                        <div class="mt-2 fw-bold" style="color: ${plColor}">${formatCurrency(convertFromUSD(stats.plUSD))}</div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        let html = `
+            <div class="mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                    <h4><i class="bi bi-calendar-week text-warning"></i> Weekly Performance Report</h4>
+                    <div class="active-filter-badge">
+                        <i class="bi bi-funnel"></i> ${monthNames[filterMonth]} ${filterYear} ${filterWeek !== 'all' ? `| Week ${filterWeek}` : '| All Weeks'}
+                    </div>
+                </div>
+                
+                <div class="row g-3 mb-4">
+                    <div class="col-md-3"><div class="weekly-summary-card text-center"><div class="stat-label text-white-50">Total Trades</div><div class="weekly-stat-number">${totalTrades}</div></div></div>
+                    <div class="col-md-3"><div class="weekly-summary-card text-center"><div class="stat-label text-white-50">Win / Loss</div><div class="weekly-stat-number">${totalWins} / ${totalLosses}</div><small>BE: ${totalBE}</small></div></div>
+                    <div class="col-md-3"><div class="weekly-summary-card text-center"><div class="stat-label text-white-50">Win Rate</div><div class="weekly-stat-number">${winRate}%</div></div></div>
+                    <div class="col-md-3"><div class="weekly-summary-card text-center"><div class="stat-label text-white-50">Net P&L</div><div class="weekly-stat-number ${plClassTotal}">${formatCurrency(convertFromUSD(totalPLUSD))}</div></div></div>
+                </div>
+                
+                <h5 class="mt-4 mb-3"><i class="bi bi-calendar-day"></i> Daily Performance</h5>
+                <div class="row">${dailyCards || '<div class="col-12 text-center text-muted py-4">No trades for this period</div>'}</div>
+                
+                <h5 class="mt-4 mb-3"><i class="bi bi-list-ul"></i> Trade Details</h5>
+                <div class="table-responsive">
+                    <table class="table table-sm table-bordered">
+                        <thead class="table-dark">…
+<th>Date</th><th>Day</th><th>Week #</th><th>Instrument</th><th>Type</th><th>Entry</th><th>Exit</th><th>Lot</th><th>Result</th><th>P/L</th> </tr</thead>
+                        <tbody>
+                            ${filteredTrades.length > 0 ? filteredTrades.map(t => {
+                                let plUSD = calculatePL(t[4], t[5], t[6], t[3], t[8] || 'TP', t[7] || 0.1, t[2]);
+                                let result = determineResult(t[8] || 'TP');
+                                let resultClass = result === 'Win' ? 'profit-text' : (result === 'Loss' ? 'loss-text' : 'breakeven-text');
+                                let weekNum = getWeekOfMonth(t[0]);
+                                return `<tr>
+                                    <td>${t[0] || ''}</td><td>${getDayOfWeek(t[0])}</td><td class="text-center">${weekNum}</td>
+                                    <td>${t[2] || 'EURUSD'}</td><td>${t[3] || 'Buy'}</td>
+                                    <td>${t[4] || 0}</td>
+                                    <td>${t[8] === 'TP' ? (t[6] || 0) : (t[8] === 'SL' ? (t[5] || 0) : 'BE')}</td>
+                                    <td>${t[7] || 0.1}</td>
+                                    <td class="${resultClass}">${result}</td>
+                                    <td class="${plUSD >= 0 ? 'profit-text' : 'loss-text'}">${formatCurrency(convertFromUSD(plUSD))}</td>
+                                </tr>`;
+                            }).join('') : '<tr><td colspan="10" class="text-center text-muted py-4">📭 No trades recorded for this period</td></tr>'}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+        document.getElementById('weeklyReportContainer').innerHTML = html;
+    }
     
-    function renderDashboard() { let trades=loadData('trades',currentYear,currentMonth), incomes=loadData('incomes',currentYear,currentMonth), expenses=loadData('expenses',currentYear,currentMonth); let tradingPL=trades.reduce((s,t)=>s+calculatePL(t[4],t[5],t[6],t[3],t[8]||'TP',t[7]||0.1,t[2]),0); let totalIncomeUSD=incomes.reduce((s,i)=>s+(i[3]||0),0), totalExpUSD=expenses.reduce((s,e)=>s+(e[3]||0),0), net=tradingPL+totalIncomeUSD-totalExpUSD; let wins=trades.filter(t=>t[8]==='TP').length, losses=trades.filter(t=>t[8]==='SL').length; let winRate=trades.length?((wins/trades.length)*100).toFixed(1):0; document.getElementById('dashboardGrid').innerHTML = `<div class="col-md-4 col-lg-3"><div class="dashboard-stat"><div class="stat-label">Trading P/L</div><div class="stat-number ${tradingPL>=0?'profit-text':'loss-text'}">${formatCurrency(convertFromUSD(tradingPL))}</div></div></div><div class="col-md-4 col-lg-3"><div class="dashboard-stat"><div class="stat-label">Win Rate</div><div class="stat-number">${winRate}%</div><small>${wins}W / ${losses}L</small></div></div><div class="col-md-4 col-lg-3"><div class="dashboard-stat"><div class="stat-label">Total Income</div><div class="stat-number text-success">${formatCurrency(convertFromUSD(totalIncomeUSD))}</div></div></div><div class="col-md-4 col-lg-3"><div class="dashboard-stat"><div class="stat-label">Expenses</div><div class="stat-number text-danger">${formatCurrency(convertFromUSD(totalExpUSD))}</div></div></div><div class="col-md-4 col-lg-3"><div class="dashboard-stat"><div class="stat-label">Net Profit</div><div class="stat-number ${net>=0?'profit-text':'loss-text'}">${formatCurrency(convertFromUSD(net))}</div></div></div>`; }
+    // Income, Expense, Dashboard, Charts (simplified but functional)
+    function renderIncomeTable() { 
+        let incomes = loadData('incomes', filterYear, filterMonth); 
+        let totalLocal=0, html=''; 
+        const isAdmin=canEdit(); 
+        incomes.forEach((inc,idx)=>{ 
+            let date=inc[0]||'', cat=inc[1]||'Mentorship', desc=inc[2]||'', amtUSD=inc[3]||0, amtLocal=convertFromUSD(amtUSD); 
+            totalLocal+=amtLocal; 
+            html+=`<tr><td><input type="date" class="form-control form-control-sm income-edit" data-field="date" value="${date}" ${isAdmin?'':'disabled'}><td>${getDayOfWeek(date)}<td><select class="form-select form-select-sm income-edit" data-field="category" ${isAdmin?'':'disabled'}><option ${cat==='Mentorship'?'selected':''}>Mentorship</option><option ${cat==='Signals'?'selected':''}>Signals</option><option ${cat==='Account Mgmt'?'selected':''}>Account Mgmt</option><option ${cat==='Other'?'selected':''}>Other</option></select><td><input class="form-control form-control-sm income-edit" data-field="description" value="${desc}" ${isAdmin?'':'disabled'}><td><input class="form-control form-control-sm income-edit" data-field="amount" value="${currentCurrency==='USD'?amtLocal.toFixed(1):Math.round(amtLocal)}" ${isAdmin?'':'disabled'}><td>${isAdmin?`<i class="bi bi-trash3 delete-icon" data-delete="income" data-idx="${idx}"></i>`:'🔒'}`; 
+        }); 
+        document.getElementById('incomeTableBody').innerHTML = html; 
+        document.getElementById('totalIncomeSpan').innerHTML = formatCurrency(totalLocal); 
+        if(isAdmin) attachIncomeEvents(); 
+    }
+    function attachIncomeEvents() { 
+        document.querySelectorAll('.income-edit').forEach(el=>{ el.onchange=()=>{ if(!canEdit()) return; let row=el.closest('tr'), idx=row.getAttribute('data-idx'), field=el.getAttribute('data-field'); let incomes=loadData('incomes',filterYear,filterMonth); if(!incomes[idx]) incomes[idx]=['','Mentorship','',0]; if(field==='date') incomes[idx][0]=el.value; else if(field==='category') incomes[idx][1]=el.value; else if(field==='description') incomes[idx][2]=el.value; else if(field==='amount') incomes[idx][3]=convertToUSD(parseFloat(el.value)||0); saveData('incomes',filterYear,filterMonth,incomes); renderAll(); }; }); 
+        document.querySelectorAll('[data-delete="income"]').forEach(btn=>{ btn.onclick=()=>{ if(!canEdit()) return; let idx=btn.getAttribute('data-idx'); let incomes=loadData('incomes',filterYear,filterMonth); incomes.splice(idx,1); saveData('incomes',filterYear,filterMonth,incomes); renderAll(); }; }); 
+    }
+    function renderExpenseTable() { 
+        let expenses = loadData('expenses', filterYear, filterMonth); 
+        let totalLocal=0, html=''; 
+        const isAdmin=canEdit(); 
+        expenses.forEach((exp,idx)=>{ 
+            let date=exp[0]||'', cat=exp[1]||'Misc', desc=exp[2]||'', amtUSD=exp[3]||0, amtLocal=convertFromUSD(amtUSD); 
+            totalLocal+=amtLocal; 
+            html+=`<tr><td><input type="date" class="form-control form-control-sm expense-edit" data-field="date" value="${date}" ${isAdmin?'':'disabled'}><td>${getDayOfWeek(date)}<td><input class="form-control form-control-sm expense-edit" data-field="cat" value="${cat}" ${isAdmin?'':'disabled'}><td><input class="form-control form-control-sm expense-edit" data-field="desc" value="${desc}" ${isAdmin?'':'disabled'}><td><input class="form-control form-control-sm expense-edit" data-field="amt" value="${currentCurrency==='USD'?amtLocal.toFixed(1):Math.round(amtLocal)}" ${isAdmin?'':'disabled'}><td>${isAdmin?`<i class="bi bi-trash3 delete-icon" data-delete="expense" data-idx="${idx}"></i>`:'🔒'}`; 
+        }); 
+        document.getElementById('expenseTableBody').innerHTML = html; 
+        document.getElementById('totalExpenseSpan').innerHTML = formatCurrency(totalLocal); 
+        if(isAdmin) attachExpenseEvents(); 
+    }
+    function attachExpenseEvents() { 
+        document.querySelectorAll('.expense-edit').forEach(el=>{ el.onchange=()=>{ if(!canEdit()) return; let row=el.closest('tr'), idx=row.getAttribute('data-idx'), field=el.getAttribute('data-field'); let expenses=loadData('expenses',filterYear,filterMonth); if(!expenses[idx]) expenses[idx]=['','','',0]; if(field==='date') expenses[idx][0]=el.value; else if(field==='cat') expenses[idx][1]=el.value; else if(field==='desc') expenses[idx][2]=el.value; else if(field==='amt') expenses[idx][3]=convertToUSD(parseFloat(el.value)||0); saveData('expenses',filterYear,filterMonth,expenses); renderAll(); }; }); 
+        document.querySelectorAll('[data-delete="expense"]').forEach(btn=>{ btn.onclick=()=>{ if(!canEdit()) return; let idx=btn.getAttribute('data-idx'); let expenses=loadData('expenses',filterYear,filterMonth); expenses.splice(idx,1); saveData('expenses',filterYear,filterMonth,expenses); renderAll(); }; }); 
+    }
+    function renderDashboard() { 
+        let trades = getAllTradesMatchingFilters();
+        let incomes = loadData('incomes', filterYear, filterMonth); 
+        let expenses = loadData('expenses', filterYear, filterMonth); 
+        let tradingPL = trades.reduce((s,t)=>s+calculatePL(t[4],t[5],t[6],t[3],t[8]||'TP',t[7]||0.1,t[2]),0); 
+        let totalIncomeUSD = incomes.reduce((s,i)=>s+(i[3]||0),0); 
+        let totalExpUSD = expenses.reduce((s,e)=>s+(e[3]||0),0); 
+        let net = tradingPL + totalIncomeUSD - totalExpUSD; 
+        let wins = trades.filter(t=>t[8]==='TP').length; 
+        let losses = trades.filter(t=>t[8]==='SL').length; 
+        let winRate = trades.length?((wins/trades.length)*100).toFixed(1):0; 
+        document.getElementById('dashboardGrid').innerHTML = `
+            <div class="col-md-4 col-lg-3"><div class="dashboard-stat"><div class="stat-label">Trading P/L</div><div class="stat-number ${tradingPL>=0?'profit-text':'loss-text'}">${formatCurrency(convertFromUSD(tradingPL))}</div></div></div>
+            <div class="col-md-4 col-lg-3"><div class="dashboard-stat"><div class="stat-label">Win Rate</div><div class="stat-number">${winRate}%</div><small>${wins}W / ${losses}L</small></div></div>
+            <div class="col-md-4 col-lg-3"><div class="dashboard-stat"><div class="stat-label">Total Income</div><div class="stat-number text-success">${formatCurrency(convertFromUSD(totalIncomeUSD))}</div></div></div>
+            <div class="col-md-4 col-lg-3"><div class="dashboard-stat"><div class="stat-label">Expenses</div><div class="stat-number text-danger">${formatCurrency(convertFromUSD(totalExpUSD))}</div></div></div>
+            <div class="col-md-4 col-lg-3"><div class="dashboard-stat"><div class="stat-label">Net Profit</div><div class="stat-number ${net>=0?'profit-text':'loss-text'}">${formatCurrency(convertFromUSD(net))}</div></div></div>`;
+    }
+    function renderCharts() { 
+        let trades = getAllTradesMatchingFilters();
+        let incomes = loadData('incomes', filterYear, filterMonth); 
+        let asian=0,london=0,ny=0; 
+        trades.forEach(t=>{ let pl=calculatePL(t[4],t[5],t[6],t[3],t[8]||'TP',t[7]||0.1,t[2]); if(t[1]==='Asian') asian+=pl; else if(t[1]==='London') london+=pl; else if(t[1]==='New York') ny+=pl; }); 
+        let ctxS=document.getElementById('sessionChartCanvas').getContext('2d'); if(sessionChart) sessionChart.destroy(); sessionChart=new Chart(ctxS,{type:'bar',data:{labels:['Asian','London','New York'],datasets:[{label:`P/L (${currentCurrency})`,data:[convertFromUSD(asian),convertFromUSD(london),convertFromUSD(ny)],backgroundColor:['#e4b363','#4299c1','#48bb78']}]}}); 
+        let catMap={Mentorship:0,Signals:0,'Account Mgmt':0,Other:0}; incomes.forEach(inc=>{ let cat=inc[1]||'Other'; catMap[cat]+=convertFromUSD(inc[3]||0); }); 
+        let ctxInc=document.getElementById('incomeChartCanvas').getContext('2d'); if(incomeChart) incomeChart.destroy(); incomeChart=new Chart(ctxInc,{type:'doughnut',data:{labels:Object.keys(catMap),datasets:[{data:Object.values(catMap),backgroundColor:['#e4b363','#5f9ea0','#d98c2f','#9b8c7c']}]}}); 
+        let wins=trades.filter(t=>t[8]==='TP').length, losses=trades.filter(t=>t[8]==='SL').length, be=trades.filter(t=>t[8]==='BE').length; 
+        let ctxWL=document.getElementById('winLossChartCanvas').getContext('2d'); if(winLossChart) winLossChart.destroy(); winLossChart=new Chart(ctxWL,{type:'pie',data:{labels:['Wins','Losses','Breakeven'],datasets:[{data:[wins,losses,be],backgroundColor:['#10b981','#ef4444','#8d99ae']}]}}); 
+    }
     
-    function renderCharts() { let trades=loadData('trades',currentYear,currentMonth), incomes=loadData('incomes',currentYear,currentMonth); let asian=0,london=0,ny=0; trades.forEach(t=>{ let pl=calculatePL(t[4],t[5],t[6],t[3],t[8]||'TP',t[7]||0.1,t[2]); if(t[1]==='Asian') asian+=pl; else if(t[1]==='London') london+=pl; else if(t[1]==='New York') ny+=pl; }); let ctxS=document.getElementById('sessionChartCanvas').getContext('2d'); if(sessionChart) sessionChart.destroy(); sessionChart=new Chart(ctxS,{type:'bar',data:{labels:['Asian','London','New York'],datasets:[{label:`P/L (${currentCurrency})`,data:[convertFromUSD(asian),convertFromUSD(london),convertFromUSD(ny)],backgroundColor:['#e4b363','#4299c1','#48bb78']}]}}); let catMap={Mentorship:0,Signals:0,'Account Mgmt':0,Other:0}; incomes.forEach(inc=>{ let cat=inc[1]||'Other'; catMap[cat]+=convertFromUSD(inc[3]||0); }); let ctxInc=document.getElementById('incomeChartCanvas').getContext('2d'); if(incomeChart) incomeChart.destroy(); incomeChart=new Chart(ctxInc,{type:'doughnut',data:{labels:Object.keys(catMap),datasets:[{data:Object.values(catMap),backgroundColor:['#e4b363','#5f9ea0','#d98c2f','#9b8c7c']}]}}); let wins=trades.filter(t=>t[8]==='TP').length, losses=trades.filter(t=>t[8]==='SL').length, be=trades.filter(t=>t[8]==='BE').length; let ctxWL=document.getElementById('winLossChartCanvas').getContext('2d'); if(winLossChart) winLossChart.destroy(); winLossChart=new Chart(ctxWL,{type:'pie',data:{labels:['Wins','Losses','Breakeven'],datasets:[{data:[wins,losses,be],backgroundColor:['#10b981','#ef4444','#8d99ae']}]}}); }
-    
-    function initSelectors() { let yearSel=document.getElementById('tradeYear'), monthSel=document.getElementById('tradeMonth'); for(let y=2023;y<=2027;y++) yearSel.innerHTML+=`<option value="${y}">${y}</option>`; yearSel.value=currentYear; monthSel.innerHTML=monthNames.map((n,i)=>`<option value="${i}">${n}</option>`).join(''); monthSel.value=currentMonth; yearSel.onchange=()=>{ currentYear=parseInt(yearSel.value); renderAll(); }; monthSel.onchange=()=>{ currentMonth=parseInt(monthSel.value); renderAll(); }; document.getElementById('tradeWeek').onchange=(e)=>{ currentWeek=e.target.value; renderAll(); }; document.getElementById('globalCurrencySelect').onchange=(e)=>{ currentCurrency=e.target.value; renderAll(); };
-        if(canEdit()) { document.getElementById('addTradeBtn').onclick=()=>{ let trades=loadData('trades',currentYear,currentMonth); let today=new Date(); trades.push([`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`,'Asian','EURUSD','Buy',1.0890,1.0860,1.0940,0.1,'TP']); saveData('trades',currentYear,currentMonth,trades); renderAll(); }; document.getElementById('addIncomeBtn').onclick=()=>{ let inc=loadData('incomes',currentYear,currentMonth); let today=new Date(); inc.push([`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`,'Mentorship','New income',0]); saveData('incomes',currentYear,currentMonth,inc); renderAll(); }; document.getElementById('addExpenseBtn').onclick=()=>{ let exp=loadData('expenses',currentYear,currentMonth); let today=new Date(); exp.push([`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`,'Misc','',0]); saveData('expenses',currentYear,currentMonth,exp); renderAll(); }; document.getElementById('addQuickTradeBtn').onclick=()=>{ let instr = document.getElementById('quickInstrumentSelect').value; if(!instr){ alert('Select instrument'); return; } let type = document.getElementById('quickTypeSelect').value; let lot = parseFloat(document.getElementById('quickLotSelect').value) || 0.1; let trades=loadData('trades',currentYear,currentMonth); let today=new Date(); let entry=1.09, sl=1.087, tp=1.094; if(instr.includes('XAU')){ entry=2325; sl=2318; tp=2340; } else if(instr.includes('JPY') && !instr.includes('XAU')){ entry=151.85; sl=152.10; tp=151.35; type='Sell'; } else if(instr.includes('BTC')){ entry=43000; sl=42500; tp=44000; } trades.push([`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`,'Asian',instr,type,entry,sl,tp,lot,'TP']); saveData('trades',currentYear,currentMonth,trades); renderAll(); alert(`Added ${instr} trade`); }; } else { ['addTradeBtn','addIncomeBtn','addExpenseBtn','addQuickTradeBtn'].forEach(id=>{ let btn=document.getElementById(id); if(btn) btn.disabled=true; }); }
-        document.getElementById('exportExcelBtn').onclick=()=>{ let wb=XLSX.utils.book_new(); let trades=loadData('trades',currentYear,currentMonth).map(t=>[t[0],t[1],t[2],t[3],t[4],t[5],t[6],t[7],t[8]]); let ws=XLSX.utils.aoa_to_sheet([['Date','Session','Instrument','Type','Entry','SL','TP','Lot','Exit'],...trades]); XLSX.utils.book_append_sheet(wb,ws,'Trades'); XLSX.writeFile(wb,`EmpireFX_${currentYear}_${monthNames[currentMonth]}.xlsx`); }; document.getElementById('importExcelBtn').onclick=()=>{ if(canEdit()) document.getElementById('excelFileInput').click(); else alert('Admin only'); }; document.getElementById('excelFileInput').onchange=(e)=>{ if(!canEdit()) return; let file=e.target.files[0]; if(file){ let reader=new FileReader(); reader.onload=ev=>{ let wb=XLSX.read(ev.target.result,{type:'array'}); let sheet=wb.Sheets[wb.SheetNames[0]]; let data=XLSX.utils.sheet_to_json(sheet,{header:1}); if(data.length>1){ let newTrades=[]; for(let i=1;i<data.length;i++){ let row=data[i]; if(row[0]) newTrades.push([row[0],row[1]||'Asian',row[2]||'EURUSD',row[3]||'Buy',parseFloat(row[4])||0,parseFloat(row[5])||0,parseFloat(row[6])||0,parseFloat(row[7])||0.1,row[8]||'TP']); } let old=loadData('trades',currentYear,currentMonth); saveData('trades',currentYear,currentMonth,[...old,...newTrades]); renderAll(); } }; reader.readAsArrayBuffer(file); } }; document.getElementById('resetAllDataBtn')?.addEventListener('click',()=>{ if(canEdit() && confirm('Wipe ALL data?')){ localStorage.clear(); saveUsers(); renderAll(); alert('Reset complete'); } }); document.getElementById('backupDataBtn')?.addEventListener('click',()=>{ let backup={}; for(let i=0;i<localStorage.length;i++){ let k=localStorage.key(i); backup[k]=localStorage.getItem(k); } let a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([JSON.stringify(backup)],{type:'application/json'})); a.download='empire_backup.json'; a.click(); }); document.getElementById('restoreBackupInput')?.addEventListener('change',(e)=>{ if(!canEdit()) return; let file=e.target.files[0]; if(file){ let r=new FileReader(); r.onload=ev=>{ let data=JSON.parse(ev.target.result); Object.keys(data).forEach(k=>localStorage.setItem(k,data[k])); renderAll(); alert('Restored'); }; r.readAsText(file); } }); document.getElementById('updatePasswordsBtn')?.addEventListener('click',()=>{ let newAdmin = document.getElementById('newAdminPass').value; let newTrader = document.getElementById('newTraderPass').value; if(newAdmin) { USERS_DB.admin.password = newAdmin; alert('Admin password updated'); } if(newTrader) { USERS_DB.trader.password = newTrader; alert('Trader password updated'); } saveUsers(); }); }
+    function initSelectors() { 
+        let yearSel = document.getElementById('tradeYear'); 
+        let monthSel = document.getElementById('tradeMonth');
+        for(let y=2023; y<=2027; y++) yearSel.innerHTML += `<option value="${y}">${y}</option>`; 
+        yearSel.value = filterYear; 
+        monthSel.innerHTML = monthNames.map((n,i)=>`<option value="${i}">${n}</option>`).join(''); 
+        monthSel.value = filterMonth; 
+        
+        yearSel.onchange = () => { filterYear = parseInt(yearSel.value); renderAll(); }; 
+        monthSel.onchange = () => { filterMonth = parseInt(monthSel.value); renderAll(); }; 
+        document.getElementById('tradeWeek').onchange = (e) => { filterWeek = e.target.value; renderAll(); }; 
+        document.getElementById('globalCurrencySelect').onchange = (e) => { currentCurrency = e.target.value; renderAll(); };
+        
+        if(canEdit()) { 
+            document.getElementById('addTradeBtn').onclick = () => { 
+                let today = new Date();
+                let year = today.getFullYear();
+                let month = today.getMonth();
+                let trades = loadData('trades', year, month); 
+                trades.push([`${year}-${String(month+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`,'Asian','EURUSD','Buy',1.0890,1.0860,1.0940,0.1,'TP']); 
+                saveData('trades', year, month, trades); 
+                renderAll(); 
+            }; 
+            document.getElementById('addIncomeBtn').onclick = () => { 
+                let inc = loadData('incomes', filterYear, filterMonth); 
+                let today = new Date(); 
+                inc.push([`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`,'Mentorship','New income',0]); 
+                saveData('incomes', filterYear, filterMonth, inc); 
+                renderAll(); 
+            }; 
+            document.getElementById('addExpenseBtn').onclick = () => { 
+                let exp = loadData('expenses', filterYear, filterMonth); 
+                let today = new Date(); 
+                exp.push([`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`,'Misc','',0]); 
+                saveData('expenses', filterYear, filterMonth, exp); 
+                renderAll(); 
+            }; 
+            document.getElementById('addQuickTradeBtn').onclick = () => { 
+                let instr = document.getElementById('quickInstrumentSelect').value; 
+                if(!instr){ alert('Select instrument'); return; } 
+                let type = document.getElementById('quickTypeSelect').value; 
+                let lot = parseFloat(document.getElementById('quickLotSelect').value) || 0.1; 
+                let today = new Date();
+                let year = today.getFullYear();
+                let month = today.getMonth();
+                let trades = loadData('trades', year, month); 
+                let entry=1.09, sl=1.087, tp=1.094; 
+                if(instr.includes('XAU')){ entry=2325; sl=2318; tp=2340; } 
+                else if(instr.includes('JPY') && !instr.includes('XAU')){ entry=151.85; sl=152.10; tp=151.35; type='Sell'; } 
+                else if(instr.includes('BTC')){ entry=43000; sl=42500; tp=44000; } 
+                trades.push([`${year}-${String(month+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`,'Asian',instr,type,entry,sl,tp,lot,'TP']); 
+                saveData('trades', year, month, trades); 
+                renderAll(); 
+                alert(`Added ${instr} trade`); 
+            }; 
+        } else { 
+            ['addTradeBtn','addIncomeBtn','addExpenseBtn','addQuickTradeBtn'].forEach(id => { let btn = document.getElementById(id); if(btn) btn.disabled = true; }); 
+        }
+        
+        document.getElementById('exportExcelBtn').onclick = () => { 
+            let wb = XLSX.utils.book_new(); 
+            let trades = getAllTradesMatchingFilters().map(t => [t[0], t[1], t[2], t[3], t[4], t[5], t[6], t[7], t[8]]); 
+            let ws = XLSX.utils.aoa_to_sheet([['Date','Session','Instrument','Type','Entry','SL','TP','Lot','Exit'], ...trades]); 
+            XLSX.utils.book_append_sheet(wb, ws, 'Trades'); 
+            XLSX.writeFile(wb, `EmpireFX_${filterYear}_${monthNames[filterMonth]}.xlsx`); 
+        }; 
+        document.getElementById('importExcelBtn').onclick = () => { if(canEdit()) document.getElementById('excelFileInput').click(); else alert('Admin only'); }; 
+        document.getElementById('excelFileInput').onchange = (e) => { if(!canEdit()) return; let file = e.target.files[0]; if(file){ let reader = new FileReader(); reader.onload = ev => { let wb = XLSX.read(ev.target.result, {type:'array'}); let sheet = wb.Sheets[wb.SheetNames[0]]; let data = XLSX.utils.sheet_to_json(sheet, {header:1}); if(data.length>1){ let newTrades = []; for(let i=1;i<data.length;i++){ let row = data[i]; if(row[0]){ let d = new Date(row[0]); let year = d.getFullYear(); let month = d.getMonth(); let existing = loadData('trades', year, month); existing.push([row[0], row[1]||'Asian', row[2]||'EURUSD', row[3]||'Buy', parseFloat(row[4])||0, parseFloat(row[5])||0, parseFloat(row[6])||0, parseFloat(row[7])||0.1, row[8]||'TP']); saveData('trades', year, month, existing); } } renderAll(); } }; reader.readAsArrayBuffer(file); } }; 
+        document.getElementById('resetAllDataBtn')?.addEventListener('click', () => { if(canEdit() && confirm('Wipe ALL data?')){ localStorage.clear(); saveUsers(); renderAll(); alert('Reset complete'); } }); 
+        document.getElementById('backupDataBtn')?.addEventListener('click', () => { let backup = {}; for(let i=0;i<localStorage.length;i++){ let k = localStorage.key(i); backup[k] = localStorage.getItem(k); } let a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(backup)], {type:'application/json'})); a.download = 'empire_backup.json'; a.click(); }); 
+        document.getElementById('restoreBackupInput')?.addEventListener('change', (e) => { if(!canEdit()) return; let file = e.target.files[0]; if(file){ let r = new FileReader(); r.onload = ev => { let data = JSON.parse(ev.target.result); Object.keys(data).forEach(k => localStorage.setItem(k, data[k])); renderAll(); alert('Restored'); }; r.readAsText(file); } }); 
+        document.getElementById('updatePasswordsBtn')?.addEventListener('click', () => { let newAdmin = document.getElementById('newAdminPass').value; let newTrader = document.getElementById('newTraderPass').value; if(newAdmin) { USERS_DB.admin.password = newAdmin; alert('Admin password updated'); } if(newTrader) { USERS_DB.trader.password = newTrader; alert('Trader password updated'); } saveUsers(); }); 
+    }
     
     document.getElementById('adminLoginForm').addEventListener('submit', (e)=>{ e.preventDefault(); let user = document.getElementById('adminUser').value; let pass = document.getElementById('adminPass').value; if(USERS_DB.admin && USERS_DB.admin.password === pass && user === 'admin'){ currentUser='admin'; currentUserRole='admin'; document.getElementById('currentUserRole').innerHTML='👑 Admin'; document.getElementById('adminOnlyTab').style.display='block'; showApp(); } else alert('Invalid credentials'); });
     document.getElementById('userLoginForm').addEventListener('submit', (e)=>{ e.preventDefault(); let user = document.getElementById('userName').value; let pass = document.getElementById('userPass').value; if(USERS_DB.trader && USERS_DB.trader.password === pass && user === 'trader'){ currentUser='trader'; currentUserRole='user'; document.getElementById('currentUserRole').innerHTML='📊 Trader'; document.getElementById('adminOnlyTab').style.display='none'; showApp(); } else alert('Invalid credentials'); });
     function showApp(){ document.getElementById('authSection').style.display='none'; document.getElementById('mainApp').style.display='block'; initSelectors(); renderAll(); }
     document.getElementById('logoutBtn').addEventListener('click',()=>{ currentUser=null; currentUserRole=null; document.getElementById('mainApp').style.display='none'; document.getElementById('authSection').style.display='block'; });
     
-    if(!localStorage.getItem('empire_trades_2025_1')) { saveData('trades',2025,1,[['2025-02-03','Asian','EURUSD','Buy',1.0850,1.0820,1.0910,0.2,'TP'],['2025-02-04','London','GBPUSD','Sell',1.2650,1.2680,1.2600,0.15,'TP'],['2025-02-05','New York','XAUUSD','Buy',2030,2022,2045,0.1,'SL'],['2025-02-06','Asian','USDJPY','Sell',151.50,151.80,150.80,0.2,'TP']]); saveData('incomes',2025,1,[['2025-02-10','Mentorship','Premium mentorship',500],['2025-02-15','Signals','VIP signals',200]]); saveData('expenses',2025,1,[['2025-02-11','Software','VPS',45]]); }
+    if(!localStorage.getItem('empire_trades_2025_1')) { 
+        saveData('trades',2025,0,[
+            ['2025-01-03','Asian','EURUSD','Buy',1.0850,1.0820,1.0910,0.2,'TP'],
+            ['2025-01-04','London','GBPUSD','Sell',1.2650,1.2680,1.2600,0.15,'TP'],
+            ['2025-01-05','New York','XAUUSD','Buy',2030,2022,2045,0.1,'SL'],
+            ['2025-01-06','Asian','USDJPY','Sell',151.50,151.80,150.80,0.2,'TP'],
+            ['2025-01-10','Asian','EURUSD','Buy',1.0890,1.0860,1.0940,0.3,'TP'],
+            ['2025-01-12','London','BTCUSD','Buy',43000,42500,44000,0.05,'TP']
+        ]); 
+        saveData('incomes',2025,0,[['2025-01-10','Mentorship','Premium mentorship',500],['2025-01-15','Signals','VIP signals',200]]); 
+        saveData('expenses',2025,0,[['2025-01-11','Software','VPS',45]]); 
+    }
     saveUsers();
 </script>
 </body>
