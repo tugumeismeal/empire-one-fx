@@ -798,6 +798,21 @@
   // Initialize Firebase
   const app = initializeApp(firebaseConfig);
   const analytics = getAnalytics(app);
+        // Initialize Firebase (assuming 'app' is already initialized)
+const db = getFirestore(app);
+
+// Example function to add data
+async function addData() {
+  try {
+    const docRef = await addDoc(collection(db, "yourCollectionName"), {
+      name: "Gemini",
+      message: "Hello Firestore!"
+    });
+    console.log("Document written with ID: ", docRef.id);
+  } catch (e) {
+    console.error("Error adding document: ", e);
+  }
+}
 </script>
 </body>
 </html>
