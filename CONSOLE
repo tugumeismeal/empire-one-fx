@@ -1,0 +1,1988 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Empire One FX — Ops Console</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css">
+
+<style>
+  :root{
+    --bs-body-font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --mono: 'JetBrains Mono', ui-monospace, "SF Mono", Consolas, monospace;
+    --e1-bg:#0B141C;
+    --e1-panel:#101E29;
+    --e1-panel-2:#0D1922;
+    --e1-line:#1E3240;
+    --e1-accent:#3E8FA8;
+    --e1-accent-soft:#1C3A44;
+    --e1-gold:#C9A227;
+    --e1-gold-soft:#241C09;
+    --e1-ink-dim:#8FA3AF;
+    --e1-ink-faint:#5C707B;
+  }
+  body{
+    background:var(--e1-bg);
+    color:#E7EEF2;
+    font-family:var(--bs-body-font-family);
+  }
+  .mono{ font-family:var(--mono); }
+  h1,h2,h3,h4,h5,h6, .navbar-brand{ letter-spacing:-0.01em; }
+
+  /* ---------- Sidebar ---------- */
+  #sidebar{
+    width:250px;
+    min-width:250px;
+    background:var(--e1-panel-2);
+    border-right:1px solid var(--e1-line);
+    min-height:100vh;
+    position:sticky;
+    top:0;
+    align-self:flex-start;
+  }
+  #sidebar .brand{
+    padding:20px 18px 16px;
+    border-bottom:1px solid var(--e1-line);
+  }
+  #sidebar .brand .mark{
+    font-family:var(--mono); font-size:10px; letter-spacing:.18em;
+    color:var(--e1-gold); text-transform:uppercase;
+  }
+  #sidebar .brand h1{ font-size:19px; font-weight:800; margin:5px 0 2px; }
+  #sidebar .brand .sub{ font-size:11.5px; color:var(--e1-ink-dim); }
+  #sidebar .navgroup-label{
+    font-family:var(--mono); font-size:10px; letter-spacing:.12em; text-transform:uppercase;
+    color:var(--e1-ink-faint); padding:16px 18px 6px;
+  }
+  #sidebar .nav-link{
+    color:var(--e1-ink-dim);
+    font-size:13.5px;
+    padding:9px 18px;
+    border-radius:0;
+    display:flex; align-items:center; gap:9px;
+  }
+  #sidebar .nav-link .dot{ width:6px; height:6px; border-radius:50%; background:var(--e1-ink-faint); flex:0 0 auto; }
+  #sidebar .nav-link:hover{ background:#132430; color:#fff; }
+  #sidebar .nav-link.active{ background:var(--e1-accent-soft); color:#fff; font-weight:600; }
+  #sidebar .nav-link.active .dot{ background:var(--e1-accent); }
+  #sidebar .nav-link .flag{
+    margin-left:auto; font-family:var(--mono); font-size:10px;
+    background:#301112; color:#e07777; padding:1px 7px; border-radius:20px; display:none;
+  }
+  #sidebar .nav-link .flag.show{ display:inline-block; }
+  #sidebar .sidebar-foot{
+    padding:14px 18px; border-top:1px solid var(--e1-line);
+    font-size:10.5px; color:var(--e1-ink-faint); font-family:var(--mono);
+  }
+
+  /* ---------- Main ---------- */
+  main{ min-width:0; }
+  .view{ display:none; }
+  .view.active{ display:block; animation:e1fade .2s ease; }
+  @keyframes e1fade{ from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:none;} }
+  .eyebrow{ font-family:var(--mono); font-size:11px; letter-spacing:.14em; color:var(--e1-gold); text-transform:uppercase; }
+
+  .card{ background:var(--e1-panel); border:1px solid var(--e1-line); }
+  .card.stat-card{ border-left-width:3px; border-left-color:var(--e1-ink-faint); }
+  .card.stat-card.ok{ border-left-color:#3FA35A; }
+  .card.stat-card.warn{ border-left-color:#D99A2B; }
+  .card.stat-card.bad{ border-left-color:#D64545; }
+  .stat-card .stat-label{ font-size:10.5px; text-transform:uppercase; letter-spacing:.06em; color:var(--e1-ink-dim); }
+  .stat-card .stat-value{ font-family:var(--mono); font-size:24px; font-weight:700; }
+  .stat-card .stat-sub{ font-size:11px; color:var(--e1-ink-faint); }
+
+  .table{ --bs-table-bg:transparent; font-size:13px; vertical-align:middle; }
+  .table thead th{
+    font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--e1-ink-faint);
+    border-bottom-color:var(--e1-line); white-space:nowrap; font-weight:600;
+  }
+  .table td{ border-color:var(--e1-line); }
+  .table-hover>tbody>tr:hover>*{ background-color:#0F1D27; }
+  .form-control, .form-select{
+    background:#0A151D; border-color:var(--e1-line); color:#E7EEF2; font-size:13px;
+  }
+  .form-control:focus, .form-select:focus{
+    background:#0A151D; color:#fff; border-color:var(--e1-accent); box-shadow:0 0 0 .2rem rgba(62,143,168,.25);
+  }
+  .form-control.mono, input[type=number].form-control{ font-family:var(--mono); }
+  .tbl-num{ width:100px; }
+  .tbl-input{ min-width:120px; }
+
+  .tier-pill{ font-size:11px; font-weight:600; padding:2px 9px; border-radius:5px; }
+  .tier-Probationary{ background:#241a09; color:#d99a2b; }
+  .tier-Standard{ background:#0d2430; color:#5fb9d6; }
+  .tier-Senior{ background:#132a1c; color:#4fbf74; }
+  .tier-Lead{ background:var(--e1-gold-soft); color:var(--e1-gold); }
+
+  .btn-e1{ background:var(--e1-accent); border-color:var(--e1-accent); color:#03181e; font-weight:700; }
+  .btn-e1:hover{ background:#4ea0bb; border-color:#4ea0bb; color:#03181e; }
+  .btn-outline-e1{ border-color:var(--e1-line); color:var(--e1-ink-dim); }
+  .btn-outline-e1:hover{ border-color:var(--e1-accent); color:#fff; background:transparent; }
+  .btn-del{ width:28px; height:28px; padding:0; line-height:1; border-color:var(--e1-line); color:var(--e1-ink-faint); }
+  .btn-del:hover{ border-color:#D64545; color:#D64545; }
+
+  .payout-value{ font-family:var(--mono); font-weight:700; font-size:14px; }
+  .payout-value.pos{ color:#5fd583; }
+  .payout-value.zero{ color:var(--e1-ink-faint); }
+
+  .progress{ height:7px; background:#0A151D; border:1px solid var(--e1-line); width:100px; }
+
+  .empty-row td{ text-align:center; color:var(--e1-ink-faint); padding:22px 10px; }
+
+  .note{ font-size:11.5px; color:var(--e1-ink-faint); }
+
+  .modal-content{ background:var(--e1-panel); border:1px solid var(--e1-line); color:#E7EEF2; }
+  .waterfall-row{
+    display:flex; justify-content:space-between; padding:9px 0; border-bottom:1px dashed var(--e1-line); font-size:13px;
+  }
+  .waterfall-row .k{ color:var(--e1-ink-dim); }
+  .waterfall-row .v{ font-family:var(--mono); font-weight:600; }
+  .waterfall-row.final{ border-bottom:none; border-top:2px solid var(--e1-accent); padding-top:14px; margin-top:6px; }
+  .waterfall-row.final .k{ color:#E7EEF2; font-weight:700; font-size:14px; }
+  .waterfall-row.final .v{ color:#5fd583; font-size:20px; }
+
+  ::-webkit-scrollbar{ width:10px; height:10px; }
+  ::-webkit-scrollbar-thumb{ background:#1E3240; border-radius:6px; }
+  ::-webkit-scrollbar-track{ background:transparent; }
+
+  @media (max-width: 860px){
+    body{ display:block !important; }
+    #sidebar{ width:100%; min-width:100%; position:relative; min-height:auto; }
+  }
+</style>
+</head>
+<body class="d-flex">
+
+<aside id="sidebar">
+  <div class="brand">
+    <div class="mark">Empire One FX</div>
+    <h1>Ops Console</h1>
+    <div class="sub">Live monitoring &amp; enforcement board</div>
+  </div>
+  <nav class="nav flex-column py-2" id="navList">
+    <div class="navgroup-label">Overview</div>
+    <a href="#" class="nav-link" data-view="overview"><span class="dot"></span>Group Dashboard</a>
+
+    <div class="navgroup-label">People</div>
+    <a href="#" class="nav-link" data-view="roster"><span class="dot"></span>Traders &amp; Tiers</a>
+    <a href="#" class="nav-link" data-view="daily"><span class="dot"></span>Daily Risk Board<span class="flag" id="flagDaily">!</span></a>
+    <a href="#" class="nav-link" data-view="kpi"><span class="dot"></span>KPI Scorecard</a>
+    <a href="#" class="nav-link" data-view="violations"><span class="dot"></span>Violation Log<span class="flag" id="flagViol">!</span></a>
+
+    <div class="navgroup-label">Capital — Prop Firms</div>
+    <a href="#" class="nav-link" data-view="funded"><span class="dot"></span>Funded Accounts<span class="flag" id="flagFunded">!</span></a>
+
+    <div class="navgroup-label">Capital — Pooled Capital</div>
+    <a href="#" class="nav-link" data-view="live"><span class="dot"></span>Live Accounts<span class="flag" id="flagLive">!</span></a>
+    <a href="#" class="nav-link" data-view="exposure"><span class="dot"></span>Exposure Sheet<span class="flag" id="flagExp">!</span></a>
+
+    <div class="navgroup-label">Capital — Investors</div>
+    <a href="#" class="nav-link" data-view="investors"><span class="dot"></span>Investor Accounts<span class="flag" id="flagInvestors">!</span></a>
+
+    <div class="navgroup-label">Process</div>
+    <a href="#" class="nav-link" data-view="remittance"><span class="dot"></span>Remittance Tracker<span class="flag" id="flagRemit">!</span></a>
+    <a href="#" class="nav-link" data-view="dividend"><span class="dot"></span>Dividend Declaration</a>
+    <a href="#" class="nav-link" data-view="workflow"><span class="dot"></span>Monthly Workflow</a>
+    <a href="#" class="nav-link" data-view="reference"><span class="dot"></span>Risk Quick Reference</a>
+
+    <div class="navgroup-label">Configuration</div>
+    <a href="#" class="nav-link" data-view="settings"><span class="dot"></span>Settings</a>
+  </nav>
+  <div class="sidebar-foot"><span id="saveState">● all changes saved locally</span></div>
+</aside>
+
+<main class="flex-grow-1 p-4" style="max-width:1240px;">
+
+  <!-- OVERVIEW -->
+  <section class="view active" id="view-overview">
+    <div class="mb-3">
+      <div class="eyebrow">Group Dashboard</div>
+      <h2 class="mt-1 mb-1">Where things stand right now</h2>
+      <p class="text-secondary small" style="max-width:640px;">Pulled live from every tab, including a real-time estimate of what traders would actually be paid on current profit — using the tier splits and waterfall from Master Plan §7.</p>
+    </div>
+    <div id="overviewBanner"></div>
+    <div class="row g-3 mb-2" id="statGrid"></div>
+
+    <div class="card mt-4">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h3 class="h6 fw-bold mb-0">Traders currently in an alert state</h3>
+          <span class="note">Daily / weekly / monthly threshold breaches — Risk Protocol §3</span>
+        </div>
+        <div class="table-responsive"><table class="table table-hover mb-0" id="overviewAlertTable"></table></div>
+      </div>
+    </div>
+
+    <div class="card mt-3">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h3 class="h6 fw-bold mb-0">Most recent violations</h3>
+          <span class="note">Last 5 logged — full history under Violation Log</span>
+        </div>
+        <div class="table-responsive"><table class="table table-hover mb-0" id="overviewViolTable"></table></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ROSTER -->
+  <section class="view" id="view-roster">
+    <div class="mb-3">
+      <div class="eyebrow">People</div>
+      <h2 class="mt-1 mb-1">Traders &amp; Tiers</h2>
+      <p class="text-secondary small" style="max-width:640px;">The roster every other tab reads from. Tier drives risk limits and profit split — Master Plan §7.1.</p>
+    </div>
+    <div class="card">
+      <div class="card-body">
+        <div class="table-responsive"><table class="table table-hover align-middle mb-2" id="rosterTable"></table></div>
+        <button class="btn btn-e1 btn-sm" id="addTraderBtn"><i class="bi bi-plus-lg"></i> Add trader</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- DAILY -->
+  <section class="view" id="view-daily">
+    <div class="mb-3">
+      <div class="eyebrow">People</div>
+      <h2 class="mt-1 mb-1">Daily Risk Board</h2>
+      <p class="text-secondary small" style="max-width:640px;">Status badges apply the circuit breakers from Risk Protocol §3 and §6 automatically.</p>
+    </div>
+    <div class="card">
+      <div class="card-body">
+        <div class="table-responsive"><table class="table table-hover align-middle mb-2" id="dailyTable"></table></div>
+        <div class="note">Thresholds: daily −2% warns, −3% is a hard stop for the day · weekly −5% triggers review, −7% pauses the account · monthly −8% moves the trader to simulation mode · 2 losses in a row forces a 30-min break, 3 ends trading for the day.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- KPI -->
+  <section class="view" id="view-kpi">
+    <div class="mb-3">
+      <div class="eyebrow">People</div>
+      <h2 class="mt-1 mb-1">KPI Scorecard</h2>
+      <p class="text-secondary small" style="max-width:640px;">Reviewed monthly against Master Plan §7.3 — what a tier promotion or demotion is measured against.</p>
+    </div>
+    <div class="card">
+      <div class="card-body">
+        <div class="table-responsive"><table class="table table-hover align-middle mb-2" id="kpiTable"></table></div>
+        <div class="note">Targets: avg R-multiple ≥1.5R · rolling 30-day drawdown under 5% · 0 rule violations in the last 90 days.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- VIOLATIONS -->
+  <section class="view" id="view-violations">
+    <div class="mb-3">
+      <div class="eyebrow">People</div>
+      <h2 class="mt-1 mb-1">Violation Log</h2>
+      <p class="text-secondary small" style="max-width:640px;">Maps to the four-level ladder in Risk Protocol §8. Level 3 demotes a tier; Level 4 escalates to the MD and Compliance Liaison.</p>
+    </div>
+    <div class="card mb-3">
+      <div class="card-body">
+        <h3 class="h6 fw-bold">Log a new violation</h3>
+        <div class="table-responsive"><table class="table mb-2" id="violationForm"></table></div>
+        <button class="btn btn-e1 btn-sm" id="addViolationBtn"><i class="bi bi-plus-lg"></i> Log violation</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-body">
+        <h3 class="h6 fw-bold">Full history</h3>
+        <div class="table-responsive"><table class="table table-hover align-middle mb-0" id="violationTable"></table></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FUNDED ACCOUNTS -->
+  <section class="view" id="view-funded">
+    <div class="mb-3">
+      <div class="eyebrow">Capital — Prop Firms</div>
+      <h2 class="mt-1 mb-1">Funded Accounts</h2>
+      <p class="text-secondary small" style="max-width:720px;">Every prop-firm evaluation or funded account, across every firm — a trader can hold more than one (§3.1's two-account approach). <b>Est. Payout</b> runs each account's live profit through the full waterfall in Master Plan §7.2 — prop firm's cut, Compliance Reserve, role overrides, then the trader's tier split — so it's what that trader would actually be paid today, not the raw account P&amp;L.</p>
+    </div>
+    <div id="fundedBanner"></div>
+    <div class="row g-3 mb-2" id="fundedStatGrid"></div>
+    <div class="card mt-3">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h3 class="h6 fw-bold mb-0">Accounts</h3>
+          <span class="note">One row per account, not per trader</span>
+        </div>
+        <div class="table-responsive"><table class="table table-hover align-middle mb-2" id="fundedTable"></table></div>
+        <button class="btn btn-e1 btn-sm" id="addFundedBtn"><i class="bi bi-plus-lg"></i> Add funded account</button>
+        <div class="note mt-2">Firm daily/max loss limits and payout split are the firm's own published terms (reference only, re-verify against their current rulebook) — Empire One's internal stop is always tighter and trips first by design (Risk Protocol §3).</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- LIVE -->
+  <section class="view" id="view-live">
+    <div class="mb-3">
+      <div class="eyebrow">Capital — Pooled Capital</div>
+      <h2 class="mt-1 mb-1">Live Accounts</h2>
+      <p class="text-secondary small" style="max-width:720px;">Individual sub-accounts funded from pooled seed capital (§4.2–§4.3). <b>Est. Payout</b> applies the same waterfall as funded accounts, minus the prop-firm cut layer — live capital has no firm taking a share first.</p>
+    </div>
+    <div id="liveBanner"></div>
+    <div class="row g-3 mb-2" id="liveStatGrid"></div>
+    <div class="card mt-3">
+      <div class="card-body">
+        <div class="table-responsive"><table class="table table-hover align-middle mb-2" id="liveTable"></table></div>
+        <button class="btn btn-e1 btn-sm" id="addLiveBtn"><i class="bi bi-plus-lg"></i> Add live account</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- EXPOSURE -->
+  <section class="view" id="view-exposure">
+    <div class="mb-3">
+      <div class="eyebrow">Capital — Pooled Capital</div>
+      <h2 class="mt-1 mb-1">Correlation &amp; Exposure Sheet</h2>
+      <p class="text-secondary small" style="max-width:640px;">Positions grouped by instrument and direction — if a group crosses 40% of group capital, that's the correlation cap in Risk Protocol §4.</p>
+    </div>
+    <div id="exposureBanner"></div>
+    <div class="card mb-3">
+      <div class="card-body">
+        <h3 class="h6 fw-bold">Open positions</h3>
+        <div class="table-responsive"><table class="table table-hover align-middle mb-2" id="exposureTable"></table></div>
+        <button class="btn btn-e1 btn-sm" id="addExposureBtn"><i class="bi bi-plus-lg"></i> Add position</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-body">
+        <h3 class="h6 fw-bold">Grouped exposure by instrument &amp; direction</h3>
+        <div class="table-responsive"><table class="table table-hover align-middle mb-0" id="exposureGroupTable"></table></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- INVESTORS -->
+  <section class="view" id="view-investors">
+    <div class="mb-3">
+      <div class="eyebrow">Capital — Investors</div>
+      <h2 class="mt-1 mb-1">Investor Accounts</h2>
+      <p class="text-secondary small" style="max-width:760px;">Tracks each outside investor's segregated sub-account (Master Plan §8.5, Investor Agreement §2) — separate from Funded and Live accounts because the fee mechanic is different: a <b>performance fee owed to Empire One</b>, charged only on new profit above the investor's high-water mark, not a trader profit split.</p>
+    </div>
+    <div id="investorsBanner"></div>
+    <div class="row g-3 mb-2" id="investorsStatGrid"></div>
+    <div class="card mt-3">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h3 class="h6 fw-bold mb-0">Accounts</h3>
+          <span class="note">One row per investor</span>
+        </div>
+        <div class="table-responsive"><table class="table table-hover align-middle mb-2" id="investorsTable"></table></div>
+        <button class="btn btn-e1 btn-sm" id="addInvestorBtn"><i class="bi bi-plus-lg"></i> Add investor</button>
+        <div class="note mt-2">Lock-up and redemption terms are placeholders per Investor Agreement §2/§5 (90-day lock-up, quarterly windows, 30 days' notice) — confirm against the signed terms for each investor, since these are negotiable per account.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- REMITTANCE TRACKER -->
+  <section class="view" id="view-remittance">
+    <div class="mb-3">
+      <div class="eyebrow">Process</div>
+      <h2 class="mt-1 mb-1">Remittance Tracker</h2>
+      <p class="text-secondary small" style="max-width:780px;">Prop firms and brokers pay out to the individual trader, not to Empire One FX directly (Master Plan §10.1) — this tracks whether each trader has actually forwarded what's owed. Live accounts are due weekly, every Friday; funded accounts are due within 3 business days of the trader receiving that firm's payout (§10.2).</p>
+    </div>
+    <div id="remittanceBanner"></div>
+    <div class="row g-3 mb-2" id="remittanceStatGrid"></div>
+    <div class="card mt-3">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h3 class="h6 fw-bold mb-0">Outstanding &amp; Recent Remittances</h3>
+          <span class="note">Only accounts with a nonzero amount owed appear here</span>
+        </div>
+        <div class="table-responsive"><table class="table table-hover align-middle mb-0" id="remittanceTable"></table></div>
+        <div class="note mt-2">Late/short remittance follows the four-level ladder in Master Plan §10.4 — Level 1 (1–3 days late) is a logged warning, Level 2 (&gt;3 days late or short without notice) suspends trading access on that account. This tracker flags status; the CRO still applies the actual suspension per the Violation Log.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- DIVIDEND DECLARATION -->
+  <section class="view" id="view-dividend">
+    <div class="mb-3">
+      <div class="eyebrow">Process</div>
+      <h2 class="mt-1 mb-1">Dividend Declaration</h2>
+      <p class="text-secondary small" style="max-width:780px;">The Day 20 pool (post-Layer-6 reinvestment, Master Plan §7.2/§10) defaults to staying reinvested — declaring a dividend instead requires an active Member Agreement §8 vote (6 of 10), per Master Plan §10.5. This isn't a live voting system; it's a worksheet that computes the split and records what the group decided.</p>
+    </div>
+    <div class="row g-3 mb-2" id="dividendStatGrid"></div>
+
+    <div class="card mt-3">
+      <div class="card-body">
+        <h3 class="h6 fw-bold mb-2">Propose a Declaration</h3>
+        <div class="row g-3 align-items-end">
+          <div class="col-auto">
+            <label class="note d-block mb-1">Votes in favor (of 10)</label>
+            <input type="number" class="form-control form-control-sm" id="divVotesFor" min="0" max="10" step="1" value="0" style="width:100px;">
+          </div>
+          <div class="col-auto" id="divVoteStatus"></div>
+        </div>
+        <div class="table-responsive mt-3"><table class="table table-hover align-middle mb-2" id="dividendSplitTable"></table></div>
+        <button class="btn btn-e1 btn-sm" id="declareDividendBtn" disabled><i class="bi bi-check-circle"></i> Record Declaration (requires 6+ votes)</button>
+        <div class="note mt-2">Recording a declaration pays out the entire current Day 20 pool per each Member's equity weight (Master Plan §2.4) and logs it below — it does not remove the underlying account profit from Funded/Live Accounts, since those are the source records this is calculated from.</div>
+      </div>
+    </div>
+
+    <div class="card mt-3">
+      <div class="card-body">
+        <h3 class="h6 fw-bold mb-2">Declaration History</h3>
+        <div class="table-responsive"><table class="table table-hover align-middle mb-0" id="dividendHistoryTable"></table></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- WORKFLOW -->
+  <section class="view" id="view-workflow">
+    <div class="mb-3">
+      <div class="eyebrow">Process</div>
+      <h2 class="mt-1 mb-1">Monthly Financial Workflow</h2>
+      <p class="text-secondary small" style="max-width:640px;">The payout cycle from Master Plan §10.</p>
+    </div>
+    <div class="card">
+      <div class="card-body">
+        <div id="workflowList" class="mb-2"></div>
+        <div class="d-flex align-items-center gap-3">
+          <button class="btn btn-outline-e1 btn-sm" id="resetWorkflowBtn">Reset for new month</button>
+          <span class="note" id="workflowMonthLabel"></span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- REFERENCE -->
+  <section class="view" id="view-reference">
+    <div class="mb-3">
+      <div class="eyebrow">Process</div>
+      <h2 class="mt-1 mb-1">Risk Quick Reference</h2>
+      <p class="text-secondary small" style="max-width:640px;">Read-only mirror of the Risk Protocol §11 — pin this tab open during a trading session.</p>
+    </div>
+    <div class="card"><div class="card-body"><div id="refGrid"></div></div></div>
+  </section>
+
+  <!-- SETTINGS -->
+  <section class="view" id="view-settings">
+    <div class="mb-3">
+      <div class="eyebrow">Configuration</div>
+      <h2 class="mt-1 mb-1">Settings</h2>
+      <p class="text-secondary small" style="max-width:760px;">Every money-related number the console calculates from — risk thresholds, tier splits, waterfall percentages, firm terms, and investor defaults — lives here instead of being buried in code.</p>
+    </div>
+    <div class="alert alert-warning d-flex align-items-start gap-2 py-2 mb-3">
+      <i class="bi bi-exclamation-triangle-fill mt-1"></i>
+      <div><b>Changing a number here changes what the console calculates and flags — it does not change what's written in the signed documents.</b> If you adjust a risk threshold, tier split, or fee percentage, update the matching figure in the Risk Protocol, Master Plan, Member Agreement, or Investor Agreement too, or the console and the paperwork will quietly disagree.</div>
+    </div>
+
+    <div class="card mb-3">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h3 class="h6 fw-bold mb-0">Risk Thresholds</h3>
+          <button class="btn btn-outline-e1 btn-sm" data-reset="thresholds">Reset to defaults</button>
+        </div>
+        <div class="table-responsive"><table class="table align-middle mb-0" id="settingsThresholdsTable"></table></div>
+      </div>
+    </div>
+
+    <div class="card mb-3">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h3 class="h6 fw-bold mb-0">Tier Profit Splits</h3>
+          <button class="btn btn-outline-e1 btn-sm" data-reset="splits">Reset to defaults</button>
+        </div>
+        <div class="table-responsive"><table class="table align-middle mb-0" id="settingsSplitsTable"></table></div>
+        <div class="note mt-2">Live split of 0 (or blank) means that tier isn't eligible for live-capital profit share — matches Master Plan §7.1's Probationary rule by default, but any tier can be set to 0 here if the group changes that policy.</div>
+      </div>
+    </div>
+
+    <div class="card mb-3">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h3 class="h6 fw-bold mb-0">Profit Waterfall</h3>
+          <button class="btn btn-outline-e1 btn-sm" data-reset="waterfall">Reset to defaults</button>
+        </div>
+        <div class="table-responsive"><table class="table align-middle mb-0" id="settingsWaterfallTable"></table></div>
+        <div class="note mt-2" id="waterfallTotalNote"></div>
+      </div>
+    </div>
+
+    <div class="card mb-3">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h3 class="h6 fw-bold mb-0">Prop Firm Presets</h3>
+          <button class="btn btn-outline-e1 btn-sm" data-reset="firms">Reset to defaults</button>
+        </div>
+        <div class="table-responsive"><table class="table align-middle mb-2" id="settingsFirmsTable"></table></div>
+        <div class="row g-2">
+          <div class="col-auto"><input type="text" class="form-control form-control-sm" id="newFirmName" placeholder="New firm name" style="width:180px;"></div>
+          <div class="col-auto"><button class="btn btn-e1 btn-sm" id="addFirmBtn"><i class="bi bi-plus-lg"></i> Add firm</button></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card mb-3">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h3 class="h6 fw-bold mb-0">Investor Defaults</h3>
+          <button class="btn btn-outline-e1 btn-sm" data-reset="investorDefaults">Reset to defaults</button>
+        </div>
+        <div class="table-responsive"><table class="table align-middle mb-0" id="settingsInvestorTable"></table></div>
+        <div class="note mt-2">Applied only when a new investor is added — existing investor accounts keep their own already-agreed terms.</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <h3 class="h6 fw-bold mb-1">Reset everything</h3>
+            <div class="note">Restores every setting above to Empire One FX's original defaults. Trader, account, and investor data is not affected.</div>
+          </div>
+          <button class="btn btn-outline-e1 btn-sm" id="resetAllSettingsBtn"><i class="bi bi-arrow-counterclockwise"></i> Reset all settings</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- Earnings breakdown modal -->
+<div class="modal fade" id="earningsModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header border-0 pb-0">
+        <h5 class="modal-title" id="earningsModalTitle">Payout breakdown</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body pt-1" id="earningsModalBody"></div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+<script>
+(function(){
+
+  /* ============ CONSTANTS ============ */
+  var TIERS = ["Probationary","Standard","Senior","Lead"];
+
+  // Every money-related number the app calculates from lives in DEFAULT_SETTINGS below.
+  // The working copy ("settings") is loaded from storage if the group has customized it,
+  // otherwise falls back to these defaults — edit them on the Settings page, not in code.
+  var DEFAULT_SETTINGS = {
+    thresholds: { dailyWarn:-2, dailyStop:-3, weeklyReview:-5, weeklyPause:-7, monthlySim:-8, liveDDPause:15, exposureCap:40 },
+    propSplit: { Probationary:50, Standard:60, Senior:70, Lead:75 },
+    liveSplit: { Probationary:0, Standard:55, Senior:60, Lead:65 }, // 0 = not eligible for live capital
+    waterfall: { complianceReservePct:5, croPct:2, opsPct:2, analystPct:1, devOpsPct:50 },
+    firmPresets: {
+      "FTMO": {dailyLimit:5, maxLimit:10, payoutSplit:80},
+      "FundedNext": {dailyLimit:5, maxLimit:10, payoutSplit:90},
+      "The5ers": {dailyLimit:0, maxLimit:6, payoutSplit:50},
+      "Alpha Capital Group": {dailyLimit:5, maxLimit:10, payoutSplit:90},
+      "DNA Funded": {dailyLimit:5, maxLimit:10, payoutSplit:85},
+      "Custom": {dailyLimit:5, maxLimit:10, payoutSplit:80}
+    },
+    investorDefaults: { minContribution:5000, lockupDays:90, performanceFeePct:15 },
+    maxTradesPerDay: 5,
+    newsBlackoutMin: 15
+  };
+  function cloneDefaults(){ return JSON.parse(JSON.stringify(DEFAULT_SETTINGS)); }
+  var settings = cloneDefaults();
+  function roleOverridePct(){ return (Number(settings.waterfall.croPct)||0) + (Number(settings.waterfall.opsPct)||0) + (Number(settings.waterfall.analystPct)||0); }
+
+  var VIOL_LEVELS = [
+    {v:1,label:"Level 1 — Warning"},
+    {v:2,label:"Level 2 — Suspension"},
+    {v:3,label:"Level 3 — Demotion"},
+    {v:4,label:"Level 4 — Removal"}
+  ];
+  var WORKFLOW_DAYS = [
+    {key:"d1",day:"Day 1",title:"Prop firm withdrawal requests",desc:"Traders submit withdrawal requests to their funded prop firms."},
+    {key:"d5",day:"Day 5–10",title:"Fund consolidation",desc:"Funds arrive in the Empire One Master Wallet."},
+    {key:"d12",day:"Day 12",title:"Audit & verification",desc:"Ops Manager verifies P&L against broker and live sub-account statements."},
+    {key:"d15",day:"Day 15",title:"Profit distribution",desc:"Waterfall applied — trader shares and entity reinvestment paid out."},
+    {key:"d18",day:"Day 18",title:"Compliance reserve logged",desc:"Compliance & Legal Reserve allocation recorded; Development & Operating Reserve (Layer 6) carved out automatically from entity reinvestment."},
+    {key:"d20",day:"Day 20",title:"Reinvestment meeting",desc:"Decides only the post-Layer-6 pool: new challenges vs. live-account scaling vs. dividends."},
+    {key:"d25",day:"Day 25",title:"Education revenue distributed",desc:"Signals/Academy revenue allocated or routed to marketing."}
+  ];
+  function buildRefRows(){
+    var t = settings.thresholds;
+    return [
+      ["Max risk / trade (Standard tier)","0.5%–1.0%"],
+      ["Daily hard stop", t.dailyStop+"% → halted for the day"],
+      ["Weekly pause threshold", t.weeklyPause+"% → halted until CRO + MD review"],
+      ["Monthly simulation-mode threshold", t.monthlySim+"%"],
+      ["Losses before mandatory break","2 → 30-min break · 3 → done for day"],
+      ["Max trades per day", String(settings.maxTradesPerDay)],
+      ["News blackout window", settings.newsBlackoutMin+" min before/after tier-1 releases"],
+      ["Stop-loss policy","Set at entry, always — tighten only, never widen"],
+      ["Group correlation cap", t.exposureCap+"% of capital, one direction"],
+      ["Live account drawdown pause", "−"+t.liveDDPause+"% from high-water mark"]
+    ];
+  }
+  var FUNDED_PHASES = ["Phase 1","Phase 2","Funded"];
+  var PHASE_TARGET_DEFAULT = { "Phase 1":10, "Phase 2":5, "Funded":0 };
+
+  /* ============ STATE ============ */
+  var roster = [];
+  var fundedAccounts = [];
+  var liveAccounts = [];
+  var investors = [];
+  var remittances = [];
+  var dividendLog = [];
+  var violationLog = [];
+  var exposureSheet = [];
+  var workflow = { month: currentMonthLabel(), checks:{} };
+
+  function currentMonthLabel(){
+    var d = new Date();
+    return d.toLocaleString('en-US',{month:'long',year:'numeric'});
+  }
+  function uid(){ return Math.random().toString(36).slice(2,10); }
+
+  /* ============ STORAGE ============ */
+  function markSaving(){ document.getElementById('saveState').textContent = '● saving…'; }
+  function markSaved(){ document.getElementById('saveState').textContent = '● all changes saved locally'; }
+  function markError(){ document.getElementById('saveState').textContent = '⚠ save failed — retry'; }
+
+  async function saveRoster(){
+    markSaving();
+    try{ await window.storage.set('roster', JSON.stringify(roster), false); markSaved(); }
+    catch(e){ console.error(e); markError(); }
+  }
+  async function saveFunded(){
+    markSaving();
+    try{ await window.storage.set('fundedAccounts', JSON.stringify(fundedAccounts), false); markSaved(); }
+    catch(e){ console.error(e); markError(); }
+  }
+  async function saveLive(){
+    markSaving();
+    try{ await window.storage.set('liveAccounts', JSON.stringify(liveAccounts), false); markSaved(); }
+    catch(e){ console.error(e); markError(); }
+  }
+  async function saveInvestors(){
+    markSaving();
+    try{ await window.storage.set('investors', JSON.stringify(investors), false); markSaved(); }
+    catch(e){ console.error(e); markError(); }
+  }
+  async function saveRemittances(){
+    markSaving();
+    try{ await window.storage.set('remittances', JSON.stringify(remittances), false); markSaved(); }
+    catch(e){ console.error(e); markError(); }
+  }
+  async function saveDividendLog(){
+    markSaving();
+    try{ await window.storage.set('dividendLog', JSON.stringify(dividendLog), false); markSaved(); }
+    catch(e){ console.error(e); markError(); }
+  }
+  async function saveSettings(){
+    markSaving();
+    try{ await window.storage.set('settings', JSON.stringify(settings), false); markSaved(); }
+    catch(e){ console.error(e); markError(); }
+  }
+  async function saveViolations(){
+    markSaving();
+    try{ await window.storage.set('violationLog', JSON.stringify(violationLog), false); markSaved(); }
+    catch(e){ console.error(e); markError(); }
+  }
+  async function saveExposure(){
+    markSaving();
+    try{ await window.storage.set('exposureSheet', JSON.stringify(exposureSheet), false); markSaved(); }
+    catch(e){ console.error(e); markError(); }
+  }
+  async function saveWorkflow(){
+    markSaving();
+    try{ await window.storage.set('workflow', JSON.stringify(workflow), false); markSaved(); }
+    catch(e){ console.error(e); markError(); }
+  }
+
+  async function loadAll(){
+    try{
+      var s = await window.storage.get('settings', false);
+      if(s){
+        var loaded = JSON.parse(s.value);
+        // Merge over defaults so a settings blob saved before a new field existed
+        // (e.g. an older version without newsBlackoutMin) doesn't leave it undefined.
+        // firmPresets is the one exception: it's a user-managed list (add/delete), so it's
+        // taken as-is rather than merged — otherwise a deleted firm would silently reappear
+        // on every reload because "missing from saved data" would be read as "add it back".
+        settings = cloneDefaults();
+        Object.keys(loaded).forEach(function(k){
+          if(k === 'firmPresets'){
+            settings.firmPresets = loaded.firmPresets;
+          } else if(typeof loaded[k]==='object' && loaded[k]!==null && !Array.isArray(loaded[k])){
+            settings[k] = Object.assign({}, settings[k], loaded[k]);
+          } else {
+            settings[k] = loaded[k];
+          }
+        });
+        // Safety net: "Custom" is the one preset the UI won't let you delete, but guard
+        // against it being missing anyway (e.g. hand-edited storage) so lookups never break.
+        if(!settings.firmPresets || !settings.firmPresets["Custom"]){
+          settings.firmPresets = settings.firmPresets || {};
+          settings.firmPresets["Custom"] = cloneDefaults().firmPresets["Custom"];
+        }
+      }
+    }catch(e){ settings = cloneDefaults(); }
+
+    try{
+      var r = await window.storage.get('roster', false);
+      roster = r ? JSON.parse(r.value) : defaultRoster();
+    }catch(e){ roster = defaultRoster(); }
+
+    try{
+      var fa = await window.storage.get('fundedAccounts', false);
+      fundedAccounts = fa ? JSON.parse(fa.value) : [];
+    }catch(e){ fundedAccounts = []; }
+
+    try{
+      var la = await window.storage.get('liveAccounts', false);
+      liveAccounts = la ? JSON.parse(la.value) : [];
+    }catch(e){ liveAccounts = []; }
+
+    try{
+      var iv = await window.storage.get('investors', false);
+      investors = iv ? JSON.parse(iv.value) : [];
+    }catch(e){ investors = []; }
+
+    try{
+      var rm = await window.storage.get('remittances', false);
+      remittances = rm ? JSON.parse(rm.value) : [];
+    }catch(e){ remittances = []; }
+
+    try{
+      var dv = await window.storage.get('dividendLog', false);
+      dividendLog = dv ? JSON.parse(dv.value) : [];
+    }catch(e){ dividendLog = []; }
+
+    // Migration: pre-v3 versions stored one live balance/HWM per trader on the roster row itself.
+    var migrated = false;
+    roster.forEach(function(t){
+      if((t.liveBalance || t.liveHWM) && !t._migratedLive){
+        liveAccounts.push({
+          id: uid(), traderId: t.id, label:"Migrated account",
+          balance: Number(t.liveBalance)||0, hwm: Number(t.liveHWM)||0,
+          seed: Number(t.liveHWM)||Number(t.liveBalance)||0, notes:""
+        });
+        t._migratedLive = true;
+        migrated = true;
+      }
+    });
+    if(migrated){ saveRoster(); saveLive(); }
+    // Backfill "seed" for any live accounts created before that field existed
+    liveAccounts.forEach(function(a){ if(a.seed===undefined || a.seed===null) a.seed = a.hwm || a.balance || 0; });
+    fundedAccounts.forEach(function(a){ if(a.payoutSplitPct===undefined) a.payoutSplitPct = (settings.firmPresets[a.firm]||settings.firmPresets.Custom).payoutSplit; });
+    roster.forEach(function(t){ if(t.contribution===undefined) t.contribution = 100; });
+
+
+    try{
+      var v = await window.storage.get('violationLog', false);
+      violationLog = v ? JSON.parse(v.value) : [];
+    }catch(e){ violationLog = []; }
+
+    try{
+      var x = await window.storage.get('exposureSheet', false);
+      exposureSheet = x ? JSON.parse(x.value) : [];
+    }catch(e){ exposureSheet = []; }
+
+    try{
+      var w = await window.storage.get('workflow', false);
+      workflow = w ? JSON.parse(w.value) : { month: currentMonthLabel(), checks:{} };
+    }catch(e){ workflow = { month: currentMonthLabel(), checks:{} }; }
+
+    renderAll();
+  }
+
+  function defaultRoster(){
+    return [ mkTrader("Trader 1","Standard"), mkTrader("Trader 2","Probationary") ];
+  }
+  function mkTrader(name,tier){
+    return {
+      id: uid(), name:name, tier: tier||"Probationary", status:"Active", notes:"",
+      dailyPnL:0, weeklyPnL:0, monthlyPnL:0, openPositions:0, consecLosses:0,
+      winRate:0, avgR:0, dd30:0, viol90:0,
+      contribution:100 // cumulative capital contribution, Master Plan §2.4 — drives equity weight
+    };
+  }
+  function equityWeight(contribution){
+    var c = Number(contribution)||0;
+    if(c >= 1000) return {bracket:"Sponsor", weight:2};
+    if(c >= 500) return {bracket:"Enhanced", weight:1.5};
+    return {bracket:"Baseline", weight:1};
+  }
+  function mkFunded(traderId){
+    var p = settings.firmPresets["FTMO"];
+    return {
+      id: uid(), traderId:traderId, firm:"FTMO", accountSize:10000, phase:"Phase 1",
+      balance:10000, profitTargetPct: PHASE_TARGET_DEFAULT["Phase 1"],
+      dailyLossUsedPct:0, maxLossUsedPct:0,
+      firmDailyLimitPct:p.dailyLimit, firmMaxLimitPct:p.maxLimit, payoutSplitPct:p.payoutSplit
+    };
+  }
+  function mkLive(traderId){
+    return { id: uid(), traderId:traderId, label:"Live account", balance:100, hwm:100, seed:100, notes:"" };
+  }
+  function mkInvestor(){
+    var d = settings.investorDefaults;
+    return {
+      id: uid(), name:"New investor", contribution:d.minContribution, balance:d.minContribution, hwm:d.minContribution,
+      fundedDate: todayISO(), lockupDays:d.lockupDays, performanceFeePct:d.performanceFeePct, notes:""
+    };
+  }
+
+  /* ============ NAV ============ */
+  var navLinks = Array.prototype.slice.call(document.querySelectorAll('#navList .nav-link'));
+  navLinks.forEach(function(link){
+    link.addEventListener('click', function(e){
+      e.preventDefault();
+      var target = link.getAttribute('data-view');
+      navLinks.forEach(function(l){ l.classList.remove('active'); });
+      link.classList.add('active');
+      document.querySelectorAll('.view').forEach(function(v){ v.classList.remove('active'); });
+      document.getElementById('view-' + target).classList.add('active');
+    });
+  });
+  navLinks[0].classList.add('active');
+
+  /* ============ STATUS HELPERS ============ */
+  function dailyStatus(t){
+    if(t.dailyPnL <= settings.thresholds.dailyStop) return {label:"HARD STOP", cls:"bad"};
+    if(t.dailyPnL <= settings.thresholds.dailyWarn) return {label:"Warning", cls:"warn"};
+    return {label:"Normal", cls:"ok"};
+  }
+  function weeklyStatus(t){
+    if(t.weeklyPnL <= settings.thresholds.weeklyPause) return {label:"Paused", cls:"bad"};
+    if(t.weeklyPnL <= settings.thresholds.weeklyReview) return {label:"Review", cls:"warn"};
+    return {label:"Normal", cls:"ok"};
+  }
+  function monthlyStatus(t){
+    if(t.monthlyPnL <= settings.thresholds.monthlySim) return {label:"Simulation", cls:"bad"};
+    return {label:"Normal", cls:"ok"};
+  }
+  function streakStatus(t){
+    if(t.consecLosses >= 3) return {label:"Done for day", cls:"bad"};
+    if(t.consecLosses === 2) return {label:"30-min break", cls:"warn"};
+    return {label:"Clear", cls:"ok"};
+  }
+  function liveDD(acc){
+    if(!acc.hwm || acc.hwm <= 0) return 0;
+    var dd = (acc.hwm - acc.balance) / acc.hwm * 100;
+    return dd < 0 ? 0 : dd;
+  }
+  function liveStatus(acc){
+    var dd = liveDD(acc);
+    if(dd >= settings.thresholds.liveDDPause) return {label:"PAUSED", cls:"bad", dd:dd};
+    if(dd >= settings.thresholds.liveDDPause*0.66) return {label:"Watch", cls:"warn", dd:dd};
+    return {label:"Normal", cls:"ok", dd:dd};
+  }
+  function fundedProgressPct(a){
+    if(!a.profitTargetPct || a.profitTargetPct<=0) return null;
+    var targetGain = a.accountSize * (a.profitTargetPct/100);
+    if(targetGain<=0) return null;
+    var gain = a.balance - a.accountSize;
+    return Math.max(0, Math.min(150, (gain/targetGain)*100));
+  }
+  function fundedStatus(a){
+    if(a.dailyLossUsedPct >= settings.thresholds.dailyStop*-1 || a.maxLossUsedPct >= (a.firmMaxLimitPct||10))
+      return {label:"BREACHED", cls:"bad"};
+    if(a.dailyLossUsedPct >= settings.thresholds.dailyWarn*-1 || a.maxLossUsedPct >= (a.firmMaxLimitPct||10)*0.7)
+      return {label:"At Risk", cls:"warn"};
+    var prog = fundedProgressPct(a);
+    if(a.phase === "Funded") return {label:"Funded — Active", cls:"ok"};
+    if(prog !== null && prog >= 100) return {label:"Target Reached", cls:"ok"};
+    if(prog !== null && prog >= 75) return {label:"Approaching Target", cls:"warn"};
+    return {label:"On Track", cls:"ok"};
+  }
+  function fundedOf(traderId){ return fundedAccounts.filter(function(a){ return a.traderId===traderId; }); }
+  function liveOf(traderId){ return liveAccounts.filter(function(a){ return a.traderId===traderId; }); }
+  function kpiFlags(t){
+    var r = t.avgR >= 1.5 ? "ok" : (t.avgR >= 1 ? "warn" : "bad");
+    var d = t.dd30 < 5 ? "ok" : (t.dd30 <= 8 ? "warn" : "bad");
+    var v = t.viol90 === 0 ? "ok" : (t.viol90 === 1 ? "warn" : "bad");
+    return {r:r,d:d,v:v};
+  }
+  function isAlert(t){
+    var d = dailyStatus(t).cls !== 'ok';
+    var w = weeklyStatus(t).cls !== 'ok';
+    var m = monthlyStatus(t).cls !== 'ok';
+    var s = streakStatus(t).cls !== 'ok';
+    var l = liveOf(t.id).some(function(a){ return liveStatus(a).cls === 'bad'; });
+    var f = fundedOf(t.id).some(function(a){ return fundedStatus(a).cls === 'bad'; });
+    return d||w||m||l||s||f;
+  }
+  function badge(st){
+    var map = {ok:'success', warn:'warning', bad:'danger', neutral:'secondary'};
+    return '<span class="badge text-bg-'+(map[st.cls]||'secondary')+'">'+st.label+'</span>';
+  }
+  function trader(id){ for(var i=0;i<roster.length;i++){ if(roster[i].id===id) return roster[i]; } return null; }
+
+  /* ============ EARNINGS ENGINE ============ */
+  // Full waterfall from Master Plan §7.2. Funded accounts pass through the prop-firm cut
+  // (Layer 1) first; live accounts skip straight to the Compliance Reserve (Layer 2) since
+  // there's no prop firm taking a share of pooled seed capital.
+  function fundedEarnings(a){
+    var t = trader(a.traderId);
+    var tier = t ? t.tier : "Probationary";
+    var gross = Math.max(0, (Number(a.balance)||0) - (Number(a.accountSize)||0));
+    var firmCutPct = 100 - (Number(a.payoutSplitPct)||80);
+    var afterFirm = gross * ((Number(a.payoutSplitPct)||80)/100);
+    var firmCut = gross - afterFirm;
+    var compliance = afterFirm * (settings.waterfall.complianceReservePct/100);
+    var afterCompliance = afterFirm - compliance;
+    var overrides = afterCompliance * (roleOverridePct()/100);
+    var afterOverrides = afterCompliance - overrides;
+    var traderPct = settings.propSplit[tier] || 50;
+    var traderShare = afterOverrides * (traderPct/100);
+    var entityShare = afterOverrides - traderShare; // Layer 5, unchanged definition — full remainder
+    var devOpsReserve = entityShare * ((Number(settings.waterfall.devOpsPct)||0)/100); // Layer 6
+    var reinvestmentPool = entityShare - devOpsReserve; // what Day 20 actually decides on
+    return { type:"Funded", tier:tier, traderPct:traderPct, gross:gross, firmCut:firmCut, firmCutPct:firmCutPct,
+      compliance:compliance, overrides:overrides, traderShare:traderShare, entityShare:entityShare,
+      devOpsReserve:devOpsReserve, reinvestmentPool:reinvestmentPool, eligible:true };
+  }
+  function liveEarnings(a){
+    var t = trader(a.traderId);
+    var tier = t ? t.tier : "Probationary";
+    var seed = Number(a.seed)||Number(a.hwm)||0;
+    var gross = Math.max(0, (Number(a.balance)||0) - seed);
+    var traderPct = settings.liveSplit[tier];
+    if(!traderPct){
+      var devOps0 = gross * ((Number(settings.waterfall.devOpsPct)||0)/100);
+      return { type:"Live", tier:tier, traderPct:0, gross:gross, compliance:0, overrides:0, traderShare:0,
+        entityShare:gross, devOpsReserve:devOps0, reinvestmentPool:gross-devOps0, eligible:false };
+    }
+    var compliance = gross * (settings.waterfall.complianceReservePct/100);
+    var afterCompliance = gross - compliance;
+    var overrides = afterCompliance * (roleOverridePct()/100);
+    var afterOverrides = afterCompliance - overrides;
+    var traderShare = afterOverrides * (traderPct/100);
+    var entityShare = afterOverrides - traderShare; // Layer 5
+    var devOpsReserve = entityShare * ((Number(settings.waterfall.devOpsPct)||0)/100); // Layer 6
+    var reinvestmentPool = entityShare - devOpsReserve;
+    return { type:"Live", tier:tier, traderPct:traderPct, gross:gross, compliance:compliance,
+      overrides:overrides, traderShare:traderShare, entityShare:entityShare,
+      devOpsReserve:devOpsReserve, reinvestmentPool:reinvestmentPool, eligible:true };
+  }
+  function money(n){ return "$" + (Number(n)||0).toLocaleString('en-US',{maximumFractionDigits:0}); }
+  function payoutCell(earn){
+    var cls = earn.traderShare > 0 ? "pos" : "zero";
+    return '<span class="payout-value '+cls+'">'+money(earn.traderShare)+'</span>';
+  }
+
+  // Investor performance fee — Investor Agreement §3: 0% management fee, performance fee
+  // charged only on new profit above the investor's own high-water mark. This is revenue
+  // TO Empire One, the mirror image of a trader payout, not a trader-facing number.
+  function investorEarnings(inv){
+    var newProfit = Math.max(0, (Number(inv.balance)||0) - (Number(inv.hwm)||0));
+    var fee = newProfit * ((Number(inv.performanceFeePct)||0)/100);
+    var netToInvestor = (Number(inv.balance)||0) - fee;
+    return { newProfit:newProfit, fee:fee, netToInvestor:netToInvestor };
+  }
+  function lockupStatus(inv){
+    var end = new Date(inv.fundedDate);
+    end.setDate(end.getDate() + (Number(inv.lockupDays)||90));
+    var now = new Date();
+    var daysLeft = Math.ceil((end - now) / (1000*60*60*24));
+    if(daysLeft > 14) return {label:"In lock-up", cls:"warn", daysLeft:daysLeft};
+    if(daysLeft > 0) return {label:"Lock-up ending soon", cls:"warn", daysLeft:daysLeft};
+    return {label:"Redemption eligible", cls:"ok", daysLeft:0};
+  }
+  function feeCell(fee){
+    var cls = fee > 0 ? "pos" : "zero";
+    return '<span class="payout-value '+cls+'">'+money(fee)+'</span>';
+  }
+
+  /* ============ REMITTANCE ENGINE ============ */
+  // What a trader actually receives from the firm/broker is afterFirm (funded) or gross (live) —
+  // everything except their own traderShare has to be forwarded to Ops. Master Plan §10.1–10.4.
+  function amountOwed(earn){
+    return Math.max(0, earn.compliance + earn.overrides + earn.entityShare);
+  }
+  function addDays(date, n){ var d = new Date(date); d.setDate(d.getDate()+n); return d; }
+  function nextFriday(from){
+    var d = new Date(from);
+    var day = d.getDay(); // 0=Sun..6=Sat, Friday=5
+    var diff = (5 - day + 7) % 7;
+    d.setDate(d.getDate() + (diff===0 ? 7 : diff)); // if today IS Friday, due is the *upcoming* one
+    return d;
+  }
+  function getRemitRecord(accountType, accountId){
+    var rec = remittances.find(function(r){ return r.accountType===accountType && r.accountId===accountId; });
+    if(!rec){
+      rec = { id: uid(), accountType:accountType, accountId:accountId,
+        payoutDate: todayISO(), remitted:false, remittedDate:"", remittedAmount:0, method:"", reference:"" };
+      remittances.push(rec);
+    }
+    return rec;
+  }
+  function dueDateFor(accountType, rec){
+    if(accountType==='funded'){ return addDays(rec.payoutDate, 3); }
+    return nextFriday(new Date()); // live accounts: always the upcoming Friday, recurring
+  }
+  function remittanceStatus(rec, dueDate, owed){
+    if(owed <= 0) return null; // nothing owed yet, don't show a status at all
+    if(rec.remitted){
+      if((Number(rec.remittedAmount)||0) + 0.01 < owed) return {label:"Short", cls:"bad"};
+      return {label:"Complete", cls:"ok"};
+    }
+    var now = new Date();
+    var daysLate = Math.floor((now - dueDate) / (1000*60*60*24));
+    if(daysLate > 3) return {label:"Level 2+ Overdue", cls:"bad"};
+    if(daysLate > 0) return {label:"Level 1 Late", cls:"warn"};
+    if(dueDate - now <= 2*24*60*60*1000) return {label:"Due Soon", cls:"warn"};
+    return {label:"On Track", cls:"neutral"};
+  }
+  function fmtDate(d){
+    return d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+  }
+
+  function openEarningsModal(accType, accId){
+    if(accType==='investor'){
+      var inv = investors.find(function(x){return x.id===accId;});
+      if(!inv) return;
+      var ie = investorEarnings(inv);
+      var ls = lockupStatus(inv);
+      document.getElementById('earningsModalTitle').textContent = inv.name + " — Investor Account";
+      var ibody = '';
+      ibody += row("Current balance", money(inv.balance), "As of last statement update");
+      ibody += row("High-water mark", money(inv.hwm), "Highest balance previously reached — fees only apply above this");
+      ibody += row("New profit above high-water mark", money(ie.newProfit), "Only this portion is fee-eligible — Investor Agreement §3");
+      ibody += row("Performance fee ("+inv.performanceFeePct+"%, 0% management fee)", "−"+money(ie.fee), "Revenue to Empire One, not a trader payout — Investor Agreement §3");
+      ibody += '<div class="waterfall-row final"><span class="k">Net value to '+esc(inv.name)+'</span><span class="v">'+money(ie.netToInvestor)+'</span></div>';
+      ibody += '<div class="note mt-2">Lock-up status: '+ls.label+(ls.daysLeft>0?' ('+ls.daysLeft+' days remaining)':'')+' — Investor Agreement §5</div>';
+      document.getElementById('earningsModalBody').innerHTML = ibody;
+      showModal(inv.name + " — Investor Account");
+      return;
+    }
+    var a, earn, t, label;
+    if(accType==='funded'){
+      a = fundedAccounts.find(function(x){return x.id===accId;});
+      if(!a) return;
+      earn = fundedEarnings(a);
+      t = trader(a.traderId);
+      label = (t?t.name:"—") + " — " + a.firm + " (" + a.phase + ")";
+    } else {
+      a = liveAccounts.find(function(x){return x.id===accId;});
+      if(!a) return;
+      earn = liveEarnings(a);
+      t = trader(a.traderId);
+      label = (t?t.name:"—") + " — " + a.label;
+    }
+    document.getElementById('earningsModalTitle').textContent = label;
+    var rows = [];
+    rows.push(row("Gross account profit", money(earn.gross), "Current balance minus " + (accType==='funded'?"account size":"seed capital")));
+    if(accType==='funded'){
+      rows.push(row("Layer 1 — Prop firm cut ("+earn.firmCutPct.toFixed(0)+"%)", "−"+money(earn.firmCut), "Retained by the firm — Master Plan §7.2, Layer 1"));
+    }
+    rows.push(row("Layer 2 — Compliance & Legal Reserve ("+settings.waterfall.complianceReservePct+"%)", "−"+money(earn.compliance), "Funds legal review & licensing — §7.2, Layer 2"));
+    rows.push(row("Layer 3 — Role overrides ("+roleOverridePct()+"%)", "−"+money(earn.overrides), "CRO "+settings.waterfall.croPct+"% + Ops "+settings.waterfall.opsPct+"% + Analyst "+settings.waterfall.analystPct+"% — §7.2, Layer 3"));
+    var body = rows.join('');
+    if(!earn.eligible){
+      body += '<div class="alert alert-warning mt-3 mb-0 py-2 px-3" style="font-size:13px;">Probationary tier is not eligible for live-capital profit share (Master Plan §7.1) — 100% of this account\'s profit routes to entity reinvestment until this trader reaches Standard tier.</div>';
+      body += row("Layer 5 — Entity reinvestment (remainder)", money(earn.entityShare), "100% of gross, since no trader share applies here — §7.2, Layer 5");
+      body += row("Layer 6 — Development & Operating Reserve ("+settings.waterfall.devOpsPct+"% of Layer 5)", "−"+money(earn.devOpsReserve), "Carved out automatically before Day 20 — §7.2, Layer 6");
+      body += '<div class="waterfall-row final"><span class="k">Available for the Day 20 decision</span><span class="v">'+money(earn.reinvestmentPool)+'</span></div>';
+    } else {
+      body += '<div class="waterfall-row final"><span class="k">'+ (t?t.name:"Trader") +' receives ('+earn.traderPct+'%, '+earn.tier+' tier)</span><span class="v">'+money(earn.traderShare)+'</span></div>';
+      body += '<div class="note mt-3 mb-1" style="border-top:1px dashed var(--e1-line);padding-top:10px;">What happens to the rest — not the trader\'s money, tracked for transparency:</div>';
+      body += row("Layer 5 — Entity reinvestment (remainder, unchanged definition)", money(earn.entityShare), "§7.2, Layer 5");
+      body += row("Layer 6 — Development & Operating Reserve ("+settings.waterfall.devOpsPct+"% of Layer 5)", "−"+money(earn.devOpsReserve), "Carved out automatically before Day 20, no vote needed — §7.2, Layer 6");
+      body += '<div class="note mt-1">Available for the Day 20 reinvestment decision: '+money(earn.reinvestmentPool)+'</div>';
+    }
+    document.getElementById('earningsModalBody').innerHTML = body;
+    showModal(label);
+  }
+  function row(k,v,sub){
+    return '<div class="waterfall-row"><span class="k">'+k+'<br><span class="note">'+sub+'</span></span><span class="v">'+v+'</span></div>';
+  }
+  function showModal(label){
+    try{
+      var modal = new bootstrap.Modal(document.getElementById('earningsModal'));
+      modal.show();
+    }catch(e){
+      console.error('Bootstrap modal unavailable — CDN may still be loading', e);
+      alert('Breakdown for '+label+':\n\nOpen this account\'s row for the full numbers — the popup styling needs a moment to finish loading. Try again in a second.');
+    }
+  }
+  document.addEventListener('click', function(e){
+    var btn = e.target.closest('[data-earn]');
+    if(!btn) return;
+    openEarningsModal(btn.getAttribute('data-earn'), btn.getAttribute('data-id'));
+  });
+
+  function stat(label,value,sub,cls){
+    return '<div class="col-md-4 col-lg-3"><div class="card stat-card h-100 '+cls+'"><div class="card-body py-3">'+
+      '<div class="stat-label">'+label+'</div><div class="stat-value">'+value+'</div><div class="stat-sub">'+sub+'</div>'+
+      '</div></div></div>';
+  }
+
+  /* ============ RENDER: OVERVIEW ============ */
+  function renderOverview(){
+    var alertCount = roster.filter(isAlert).length;
+    var liveAlerts = liveAccounts.filter(function(a){ return liveStatus(a).cls==='bad'; }).length;
+    var fundedAlerts = fundedAccounts.filter(function(a){ return fundedStatus(a).cls==='bad'; }).length;
+    var fundedInEval = fundedAccounts.filter(function(a){ return a.phase!=='Funded'; }).length;
+    var fundedLive = fundedAccounts.filter(function(a){ return a.phase==='Funded'; }).length;
+    var groups = groupExposure();
+    var maxExp = groups.reduce(function(m,g){ return Math.max(m,g.pct); }, 0);
+    var totalLive = liveAccounts.reduce(function(s,a){ return s + (Number(a.balance)||0); }, 0);
+    var totalFunded = fundedAccounts.reduce(function(s,a){ return s + (Number(a.balance)||0); }, 0);
+    var totalInvestor = investors.reduce(function(s,i){ return s + (Number(i.balance)||0); }, 0);
+    var totalInvestorFees = investors.reduce(function(s,i){ return s + investorEarnings(i).fee; },0);
+    var totalPayout = fundedAccounts.reduce(function(s,a){ return s + fundedEarnings(a).traderShare; },0)
+                     + liveAccounts.reduce(function(s,a){ return s + liveEarnings(a).traderShare; },0);
+    var totalDevOps = fundedAccounts.reduce(function(s,a){ return s + fundedEarnings(a).devOpsReserve; },0)
+                     + liveAccounts.reduce(function(s,a){ return s + liveEarnings(a).devOpsReserve; },0);
+    var totalReinvestPool = fundedAccounts.reduce(function(s,a){ return s + fundedEarnings(a).reinvestmentPool; },0)
+                     + liveAccounts.reduce(function(s,a){ return s + liveEarnings(a).reinvestmentPool; },0);
+    var recentViol = violationLog.filter(function(v){
+      var d = new Date(v.date); var now = new Date();
+      return (now - d)/(1000*60*60*24) <= 90;
+    }).length;
+
+    document.getElementById('statGrid').innerHTML =
+      stat("Active traders", roster.length, "", "neutral") +
+      stat("Traders in alert", alertCount, alertCount>0?"needs CRO attention":"all clear", alertCount>0?"bad":"ok") +
+      stat("Funded accounts", fundedLive, fundedInEval+" in evaluation", "neutral") +
+      stat("Funded at risk", fundedAlerts, "breached daily/max loss", fundedAlerts>0?"bad":"ok") +
+      stat("Live accounts paused", liveAlerts, "≥15% drawdown from peak", liveAlerts>0?"bad":"ok") +
+      stat("Max group exposure", maxExp.toFixed(0)+"%", "cap is 40% one direction", maxExp>=40?"bad":(maxExp>=30?"warn":"ok")) +
+      stat("Capital under management", money(totalLive+totalFunded+totalInvestor), money(totalFunded)+" funded · "+money(totalLive)+" live · "+money(totalInvestor)+" investor", "neutral") +
+      stat("Est. trader payouts today", money(totalPayout), "if distributed right now, §7.2", "ok") +
+      stat("Est. Dev/Ops Reserve (Layer 6)", money(totalDevOps), "carved out before Day 20, §7.2", "ok") +
+      stat("Available for Day 20 decision", money(totalReinvestPool), "new challenges · live scaling · dividends", "neutral") +
+      stat("Est. investor fees accrued", money(totalInvestorFees), "revenue to Empire One", "ok") +
+      stat("Violations, last 90d", recentViol, "logged group-wide", recentViol>0?"warn":"ok");
+
+    var banners = [];
+    if(maxExp >= 40) banners.push(bannerHtml('bad','Correlation cap breached.','Group exposure has crossed 40% in one direction — see the Exposure Sheet to identify which instrument.'));
+    if(fundedAlerts>0) banners.push(bannerHtml('bad', fundedAlerts+' funded account(s) at or past a loss limit', 'Check Funded Accounts before more trades go on.'));
+    if(liveAlerts>0) banners.push(bannerHtml('bad', liveAlerts+' live account(s) auto-paused', 'On the 15% high-water-mark rule — pending CRO + Managing Director review.'));
+    if(banners.length===0) banners.push(bannerHtml('ok','All clear.','No group-level thresholds are currently breached.'));
+    document.getElementById('overviewBanner').innerHTML = banners.join('');
+
+    var alertRows = roster.filter(isAlert);
+    var alertTable = document.getElementById('overviewAlertTable');
+    if(alertRows.length===0){
+      alertTable.innerHTML = '<tbody><tr class="empty-row"><td colspan="7">No traders currently in an alert state.</td></tr></tbody>';
+    } else {
+      var rows = alertRows.map(function(t){
+        var liveBad = liveOf(t.id).some(function(a){ return liveStatus(a).cls==='bad'; });
+        var fundedBad = fundedOf(t.id).some(function(a){ return fundedStatus(a).cls==='bad'; });
+        return '<tr><td>'+esc(t.name)+'</td><td><span class="tier-pill tier-'+t.tier+'">'+t.tier+'</span></td>'+
+          '<td>'+badge(dailyStatus(t))+'</td><td>'+badge(weeklyStatus(t))+'</td><td>'+badge(monthlyStatus(t))+'</td>'+
+          '<td>'+(fundedBad?'<span class="badge text-bg-danger">Breached</span>':'<span class="badge text-bg-success">OK</span>')+'</td>'+
+          '<td>'+(liveBad?'<span class="badge text-bg-danger">Paused</span>':'<span class="badge text-bg-success">OK</span>')+'</td></tr>';
+      }).join('');
+      alertTable.innerHTML = '<thead><tr><th>Trader</th><th>Tier</th><th>Daily</th><th>Weekly</th><th>Monthly</th><th>Funded</th><th>Live</th></tr></thead><tbody>'+rows+'</tbody>';
+    }
+
+    var recentTable = document.getElementById('overviewViolTable');
+    var sorted = violationLog.slice().sort(function(a,b){ return new Date(b.date)-new Date(a.date); }).slice(0,5);
+    if(sorted.length===0){
+      recentTable.innerHTML = '<tbody><tr class="empty-row"><td colspan="4">No violations logged yet.</td></tr></tbody>';
+    } else {
+      var vrows = sorted.map(function(v){
+        var lvl = VIOL_LEVELS[v.level-1];
+        var map = {1:'secondary',2:'warning',3:'danger',4:'danger'};
+        return '<tr><td>'+esc(v.date)+'</td><td>'+esc(v.trader)+'</td><td><span class="badge text-bg-'+map[v.level]+'">'+lvl.label+'</span></td><td>'+esc(v.note||"—")+'</td></tr>';
+      }).join('');
+      recentTable.innerHTML = '<thead><tr><th>Date</th><th>Trader</th><th>Level</th><th>Note</th></tr></thead><tbody>'+vrows+'</tbody>';
+    }
+
+    document.getElementById('flagDaily').className = 'flag'+(alertCount>0?' show':'');
+    document.getElementById('flagLive').className = 'flag'+(liveAlerts>0?' show':'');
+    document.getElementById('flagExp').className = 'flag'+(maxExp>=40?' show':'');
+  }
+  function bannerHtml(kind, title, body){
+    var cls = kind==='bad' ? 'alert-danger' : 'alert-success';
+    var icon = kind==='bad' ? 'bi-exclamation-triangle-fill' : 'bi-check-circle-fill';
+    return '<div class="alert '+cls+' d-flex align-items-start gap-2 py-2" role="alert"><i class="bi '+icon+' mt-1"></i><div><b>'+title+'</b> '+body+'</div></div>';
+  }
+
+  /* ============ RENDER: ROSTER ============ */
+  function renderRoster(){
+    var el = document.getElementById('rosterTable');
+    var head = '<thead><tr><th>Name</th><th>Tier</th><th>Status</th><th>Contribution ($)</th><th>Equity Weight</th><th>Notes</th><th></th></tr></thead>';
+    var rows = roster.map(function(t){
+      var ew = equityWeight(t.contribution);
+      return '<tr>'+
+        '<td><input type="text" class="form-control form-control-sm tbl-input" value="'+attr(t.name)+'" data-f="name" data-id="'+t.id+'"></td>'+
+        '<td>'+tierSelect(t)+'</td>'+
+        '<td>'+statusSelect(t)+'</td>'+
+        '<td class="tbl-num"><input type="number" class="form-control form-control-sm" step="10" value="'+(t.contribution||0)+'" data-nf="contribution" data-id="'+t.id+'"></td>'+
+        '<td><span class="note">'+ew.bracket+' ('+ew.weight+'x)</span></td>'+
+        '<td><input type="text" class="form-control form-control-sm tbl-input" value="'+attr(t.notes)+'" data-f="notes" data-id="'+t.id+'" placeholder="—"></td>'+
+        '<td><button class="btn btn-outline-e1 btn-sm btn-del" data-del="'+t.id+'"><i class="bi bi-x-lg"></i></button></td>'+
+        '</tr>';
+    }).join('');
+    el.innerHTML = head + '<tbody>' + (rows || emptyRow(7,"No traders yet — add one below.")) + '</tbody>';
+    el.querySelectorAll('[data-f]').forEach(function(input){
+      input.addEventListener('change', function(){
+        var t = trader(input.getAttribute('data-id')); if(!t) return;
+        t[input.getAttribute('data-f')] = input.value;
+        saveRoster(); renderAll();
+      });
+    });
+    el.querySelectorAll('[data-nf]').forEach(function(input){
+      input.addEventListener('change', function(){
+        var t = trader(input.getAttribute('data-id')); if(!t) return;
+        t[input.getAttribute('data-nf')] = parseFloat(input.value)||0;
+        saveRoster(); renderAll();
+      });
+    });
+    el.querySelectorAll('[data-del]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        roster = roster.filter(function(t){ return t.id !== btn.getAttribute('data-del'); });
+        saveRoster(); renderAll();
+      });
+    });
+  }
+  function tierSelect(t){
+    var opts = TIERS.map(function(x){ return '<option value="'+x+'"'+(x===t.tier?' selected':'')+'>'+x+'</option>'; }).join('');
+    return '<select class="form-select form-select-sm" data-f="tier" data-id="'+t.id+'">'+opts+'</select>';
+  }
+  function statusSelect(t){
+    var opts = ["Active","Suspended","Simulation"].map(function(x){ return '<option value="'+x+'"'+(x===t.status?' selected':'')+'>'+x+'</option>'; }).join('');
+    return '<select class="form-select form-select-sm" data-f="status" data-id="'+t.id+'">'+opts+'</select>';
+  }
+  document.getElementById('addTraderBtn').addEventListener('click', function(){
+    roster.push(mkTrader("New trader","Probationary")); saveRoster(); renderAll();
+  });
+
+  /* ============ RENDER: DAILY ============ */
+  function renderDaily(){
+    var el = document.getElementById('dailyTable');
+    var head = '<thead><tr><th>Trader</th><th>Daily P&L %</th><th>Status</th><th>Weekly P&L %</th><th>Status</th>'+
+      '<th>Monthly P&L %</th><th>Status</th><th>Open pos.</th><th>Losses today</th><th>Streak</th></tr></thead>';
+    var rows = roster.map(function(t){
+      return '<tr>'+
+        '<td>'+esc(t.name)+' <span class="tier-pill tier-'+t.tier+'">'+t.tier+'</span></td>'+
+        numCell(t.id,'dailyPnL',t.dailyPnL) + '<td>'+badge(dailyStatus(t))+'</td>'+
+        numCell(t.id,'weeklyPnL',t.weeklyPnL) + '<td>'+badge(weeklyStatus(t))+'</td>'+
+        numCell(t.id,'monthlyPnL',t.monthlyPnL) + '<td>'+badge(monthlyStatus(t))+'</td>'+
+        numCell(t.id,'openPositions',t.openPositions) +
+        numCell(t.id,'consecLosses',t.consecLosses) +
+        '<td>'+badge(streakStatus(t))+'</td>'+
+        '</tr>';
+    }).join('');
+    el.innerHTML = head + '<tbody>' + (rows || emptyRow(10,"Add traders on the Traders & Tiers tab first.")) + '</tbody>';
+    bindNumInputs(el, saveRoster);
+  }
+  function numCell(id,field,val){
+    return '<td class="tbl-num"><input type="number" class="form-control form-control-sm" step="0.1" value="'+val+'" data-f="'+field+'" data-id="'+id+'"></td>';
+  }
+  function bindNumInputs(container, saveFn){
+    container.querySelectorAll('input[type=number]').forEach(function(input){
+      input.addEventListener('change', function(){
+        var t = trader(input.getAttribute('data-id')); if(!t) return;
+        t[input.getAttribute('data-f')] = parseFloat(input.value) || 0;
+        saveFn(); renderAll();
+      });
+    });
+  }
+
+  /* ============ RENDER: KPI ============ */
+  function renderKpi(){
+    var el = document.getElementById('kpiTable');
+    var head = '<thead><tr><th>Trader</th><th>Win rate %</th><th>Avg R-multiple</th><th></th>'+
+      '<th>30d drawdown %</th><th></th><th>Violations (90d)</th><th></th></tr></thead>';
+    var rows = roster.map(function(t){
+      var f = kpiFlags(t);
+      return '<tr>'+
+        '<td>'+esc(t.name)+'</td>'+
+        numCell(t.id,'winRate',t.winRate) +
+        numCell(t.id,'avgR',t.avgR) + '<td>'+dot(f.r)+'</td>'+
+        numCell(t.id,'dd30',t.dd30) + '<td>'+dot(f.d)+'</td>'+
+        numCell(t.id,'viol90',t.viol90) + '<td>'+dot(f.v)+'</td>'+
+        '</tr>';
+    }).join('');
+    el.innerHTML = head + '<tbody>' + (rows || emptyRow(7,"Add traders first.")) + '</tbody>';
+    bindNumInputs(el, saveRoster);
+  }
+  function dot(cls){
+    var map = {ok:'success', warn:'warning', bad:'danger'};
+    return '<span class="badge text-bg-'+map[cls]+'" style="width:9px;height:9px;padding:0;border-radius:50%;display:inline-block;"></span>';
+  }
+
+  /* ============ RENDER: VIOLATIONS ============ */
+  function renderViolationForm(){
+    var el = document.getElementById('violationForm');
+    var traderOpts = roster.map(function(t){ return '<option value="'+attr(t.name)+'">'+esc(t.name)+'</option>'; }).join('');
+    var levelOpts = VIOL_LEVELS.map(function(l){ return '<option value="'+l.v+'">'+l.label+'</option>'; }).join('');
+    el.innerHTML = '<thead><tr><th>Date</th><th>Trader</th><th>Level</th><th>Note</th></tr></thead>'+
+      '<tbody><tr>'+
+      '<td style="width:150px;"><input type="date" class="form-control form-control-sm" id="vf-date" value="'+todayISO()+'"></td>'+
+      '<td><select class="form-select form-select-sm" id="vf-trader">'+traderOpts+'</select></td>'+
+      '<td style="width:190px;"><select class="form-select form-select-sm" id="vf-level">'+levelOpts+'</select></td>'+
+      '<td><input type="text" class="form-control form-control-sm" id="vf-note" placeholder="What happened"></td>'+
+      '</tr></tbody>';
+  }
+  document.getElementById('addViolationBtn').addEventListener('click', function(){
+    var traderEl = document.getElementById('vf-trader');
+    if(!traderEl || !traderEl.value) return;
+    violationLog.push({
+      id: uid(), date: document.getElementById('vf-date').value || todayISO(),
+      trader: traderEl.value, level: parseInt(document.getElementById('vf-level').value,10),
+      note: document.getElementById('vf-note').value
+    });
+    saveViolations(); renderAll();
+  });
+  function renderViolationTable(){
+    var el = document.getElementById('violationTable');
+    var head = '<thead><tr><th>Date</th><th>Trader</th><th>Level</th><th>Note</th><th></th></tr></thead>';
+    var sorted = violationLog.slice().sort(function(a,b){ return new Date(b.date)-new Date(a.date); });
+    var map = {1:'secondary',2:'warning',3:'danger',4:'danger'};
+    var rows = sorted.map(function(v){
+      var lvl = VIOL_LEVELS[v.level-1] || VIOL_LEVELS[0];
+      return '<tr><td>'+esc(v.date)+'</td><td>'+esc(v.trader)+'</td>'+
+        '<td><span class="badge text-bg-'+map[v.level]+'">'+lvl.label+'</span></td><td>'+esc(v.note||"—")+'</td>'+
+        '<td><button class="btn btn-outline-e1 btn-sm btn-del" data-vdel="'+v.id+'"><i class="bi bi-x-lg"></i></button></td></tr>';
+    }).join('');
+    el.innerHTML = head + '<tbody>' + (rows || emptyRow(5,"No violations logged.")) + '</tbody>';
+    el.querySelectorAll('[data-vdel]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        violationLog = violationLog.filter(function(v){ return v.id !== btn.getAttribute('data-vdel'); });
+        saveViolations(); renderAll();
+      });
+    });
+  }
+
+  /* ============ RENDER: FUNDED ACCOUNTS ============ */
+  function traderSelectOptions(selectedId){
+    return roster.map(function(t){ return '<option value="'+t.id+'"'+(t.id===selectedId?' selected':'')+'>'+esc(t.name)+'</option>'; }).join('');
+  }
+  function firmSelectOptions(selected){
+    return Object.keys(settings.firmPresets).map(function(f){ return '<option value="'+f+'"'+(f===selected?' selected':'')+'>'+f+'</option>'; }).join('');
+  }
+  function phaseSelectOptions(selected){
+    return FUNDED_PHASES.map(function(p){ return '<option value="'+p+'"'+(p===selected?' selected':'')+'>'+p+'</option>'; }).join('');
+  }
+  function progressBar(pct, cls){
+    var p = pct===null ? 0 : Math.max(0,Math.min(100,pct));
+    var map = {ok:'bg-success', warn:'bg-warning', bad:'bg-danger'};
+    return '<div class="progress"><div class="progress-bar '+(map[cls]||'bg-success')+'" style="width:'+p+'%;"></div></div>';
+  }
+  function renderFunded(){
+    var evalCount = fundedAccounts.filter(function(a){return a.phase!=='Funded';}).length;
+    var fundedCount = fundedAccounts.filter(function(a){return a.phase==='Funded';}).length;
+    var atRisk = fundedAccounts.filter(function(a){return fundedStatus(a).cls==='bad';}).length;
+    var totalBal = fundedAccounts.reduce(function(s,a){return s+(Number(a.balance)||0);},0);
+    var totalPayout = fundedAccounts.reduce(function(s,a){ return s + fundedEarnings(a).traderShare; },0);
+    document.getElementById('fundedStatGrid').innerHTML =
+      stat("Accounts total", fundedAccounts.length, "", "neutral") +
+      stat("In evaluation", evalCount, "Phase 1 / Phase 2", "neutral") +
+      stat("Funded & active", fundedCount, "cleared evaluation", "ok") +
+      stat("At risk / breached", atRisk, "loss limit hit", atRisk>0?"bad":"ok") +
+      stat("Total managed capital", money(totalBal), "across all firms", "neutral") +
+      stat("Est. trader payouts", money(totalPayout), "on current profit, §7.2", "ok");
+
+    var breach = fundedAccounts.filter(function(a){ return fundedStatus(a).cls==='bad'; });
+    document.getElementById('fundedBanner').innerHTML = breach.length
+      ? bannerHtml('bad', breach.length+' funded account(s) at or past a loss limit.', 'Confirm the CRO has restricted further trading on these before anything else opens.')
+      : bannerHtml('ok','All clear.','No funded account is currently past its internal or firm loss limit.');
+
+    var el = document.getElementById('fundedTable');
+    var head = '<thead><tr><th>Trader</th><th>Firm</th><th>Phase</th><th>Account size</th><th>Balance</th>'+
+      '<th>Progress to target</th><th>Daily loss %</th><th>Max loss %</th><th>Firm limits</th><th>Payout %</th><th>Status</th><th>Est. Payout</th><th></th></tr></thead>';
+    var rows = fundedAccounts.map(function(a){
+      var prog = fundedProgressPct(a);
+      var st = fundedStatus(a);
+      var earn = fundedEarnings(a);
+      return '<tr>'+
+        '<td><select class="form-select form-select-sm" data-ff="traderId" data-id="'+a.id+'">'+traderSelectOptions(a.traderId)+'</select></td>'+
+        '<td><select class="form-select form-select-sm" data-ff="firm" data-id="'+a.id+'">'+firmSelectOptions(a.firm)+'</select></td>'+
+        '<td><select class="form-select form-select-sm" data-ff="phase" data-id="'+a.id+'">'+phaseSelectOptions(a.phase)+'</select></td>'+
+        fNumCell(a.id,'accountSize',a.accountSize) +
+        fNumCell(a.id,'balance',a.balance) +
+        '<td>'+ (prog===null ? '<span class="note">n/a</span>' : progressBar(prog, st.cls) + '<div class="note mono">'+prog.toFixed(0)+'%</div>') +'</td>'+
+        fNumCell(a.id,'dailyLossUsedPct',a.dailyLossUsedPct) +
+        fNumCell(a.id,'maxLossUsedPct',a.maxLossUsedPct) +
+        '<td class="note text-nowrap">'+(a.firmDailyLimitPct||'—')+'% / '+(a.firmMaxLimitPct||'—')+'%</td>'+
+        fNumCell(a.id,'payoutSplitPct',a.payoutSplitPct) +
+        '<td>'+badge(st)+'</td>'+
+        '<td>'+payoutCell(earn)+' <button class="btn btn-outline-e1 btn-sm py-0 px-1" data-earn="funded" data-id="'+a.id+'" title="Breakdown"><i class="bi bi-info-circle"></i></button></td>'+
+        '<td><button class="btn btn-outline-e1 btn-sm btn-del" data-fdel="'+a.id+'"><i class="bi bi-x-lg"></i></button></td>'+
+        '</tr>';
+    }).join('');
+    el.innerHTML = head + '<tbody>' + (rows || emptyRow(13,"No funded accounts yet — add one below.")) + '</tbody>';
+
+    el.querySelectorAll('[data-ff]').forEach(function(input){
+      input.addEventListener('change', function(){
+        var a = fundedAccounts.find(function(x){ return x.id === input.getAttribute('data-id'); }); if(!a) return;
+        var f = input.getAttribute('data-ff');
+        if(input.type==='number'){ a[f] = parseFloat(input.value)||0; }
+        else { a[f] = input.value; }
+        if(f === 'firm' && settings.firmPresets[a.firm]){
+          a.firmDailyLimitPct = settings.firmPresets[a.firm].dailyLimit;
+          a.firmMaxLimitPct = settings.firmPresets[a.firm].maxLimit;
+          a.payoutSplitPct = settings.firmPresets[a.firm].payoutSplit;
+        }
+        if(f === 'phase'){ a.profitTargetPct = PHASE_TARGET_DEFAULT[a.phase]; }
+        saveFunded(); renderAll();
+      });
+    });
+    el.querySelectorAll('[data-fdel]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        fundedAccounts = fundedAccounts.filter(function(a){ return a.id !== btn.getAttribute('data-fdel'); });
+        saveFunded(); renderAll();
+      });
+    });
+  }
+  function fNumCell(id,field,val){
+    return '<td class="tbl-num"><input type="number" class="form-control form-control-sm" step="0.1" value="'+val+'" data-ff="'+field+'" data-id="'+id+'"></td>';
+  }
+  document.getElementById('addFundedBtn').addEventListener('click', function(){
+    var firstTrader = roster[0] ? roster[0].id : '';
+    fundedAccounts.push(mkFunded(firstTrader)); saveFunded(); renderAll();
+  });
+
+  /* ============ RENDER: LIVE ACCOUNTS ============ */
+  function renderLive(){
+    var paused = liveAccounts.filter(function(a){ return liveStatus(a).cls==='bad'; });
+    var watch = liveAccounts.filter(function(a){ return liveStatus(a).cls==='warn'; }).length;
+    var totalBal = liveAccounts.reduce(function(s,a){ return s+(Number(a.balance)||0); },0);
+    var totalPayout = liveAccounts.reduce(function(s,a){ return s + liveEarnings(a).traderShare; },0);
+    var ineligible = liveAccounts.filter(function(a){ return !liveEarnings(a).eligible; }).length;
+
+    document.getElementById('liveStatGrid').innerHTML =
+      stat("Accounts total", liveAccounts.length, "", "neutral") +
+      stat("Approaching pause", watch, "≥10% drawdown, watch zone", watch>0?"warn":"ok") +
+      stat("Paused", paused.length, "≥15% drawdown from peak", paused.length>0?"bad":"ok") +
+      stat("Total pooled capital", money(totalBal), "across all live sub-accounts", "neutral") +
+      stat("Est. trader payouts", money(totalPayout), "on current profit, §7.2", "ok") +
+      stat("Probationary (not yet eligible)", ineligible, "no live split until Standard tier", ineligible>0?"warn":"ok");
+
+    document.getElementById('liveBanner').innerHTML = paused.length
+      ? bannerHtml('bad', paused.length+' live account(s) auto-paused', 'On the 15% high-water-mark rule — pending CRO + Managing Director review (Master Plan §4.7).')
+      : bannerHtml('ok','All clear.','No live account has crossed the 15% drawdown pause threshold.');
+
+    var el = document.getElementById('liveTable');
+    var head = '<thead><tr><th>Trader</th><th>Label</th><th>Starting capital</th><th>Balance</th><th>High-water mark</th><th>Drawdown</th><th>Status</th><th>Est. Payout</th><th></th></tr></thead>';
+    var rows = liveAccounts.map(function(a){
+      var st = liveStatus(a);
+      var t = trader(a.traderId);
+      var earn = liveEarnings(a);
+      return '<tr>'+
+        '<td><select class="form-select form-select-sm" data-lf="traderId" data-id="'+a.id+'">'+traderSelectOptions(a.traderId)+'</select>'+(t?' <span class="tier-pill tier-'+t.tier+'">'+t.tier+'</span>':'')+'</td>'+
+        '<td><input type="text" class="form-control form-control-sm tbl-input" value="'+attr(a.label)+'" data-lf="label" data-id="'+a.id+'"></td>'+
+        lNumCell(a.id,'seed',a.seed) +
+        lNumCell(a.id,'balance',a.balance) +
+        lNumCell(a.id,'hwm',a.hwm) +
+        '<td class="tbl-num mono">'+st.dd.toFixed(1)+'%</td>'+
+        '<td>'+badge(st)+'</td>'+
+        '<td>'+payoutCell(earn)+' <button class="btn btn-outline-e1 btn-sm py-0 px-1" data-earn="live" data-id="'+a.id+'" title="Breakdown"><i class="bi bi-info-circle"></i></button></td>'+
+        '<td><button class="btn btn-outline-e1 btn-sm btn-del" data-ldel="'+a.id+'"><i class="bi bi-x-lg"></i></button></td>'+
+        '</tr>';
+    }).join('');
+    el.innerHTML = head + '<tbody>' + (rows || emptyRow(9,"No live accounts yet — add one below.")) + '</tbody>';
+
+    el.querySelectorAll('[data-lf]').forEach(function(input){
+      input.addEventListener('change', function(){
+        var a = liveAccounts.find(function(x){ return x.id === input.getAttribute('data-id'); }); if(!a) return;
+        var f = input.getAttribute('data-lf');
+        a[f] = (input.type==='number') ? (parseFloat(input.value)||0) : input.value;
+        saveLive(); renderAll();
+      });
+    });
+    el.querySelectorAll('[data-ldel]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        liveAccounts = liveAccounts.filter(function(a){ return a.id !== btn.getAttribute('data-ldel'); });
+        saveLive(); renderAll();
+      });
+    });
+  }
+  function lNumCell(id,field,val){
+    return '<td class="tbl-num"><input type="number" class="form-control form-control-sm" step="1" value="'+val+'" data-lf="'+field+'" data-id="'+id+'"></td>';
+  }
+  document.getElementById('addLiveBtn').addEventListener('click', function(){
+    var firstTrader = roster[0] ? roster[0].id : '';
+    liveAccounts.push(mkLive(firstTrader)); saveLive(); renderAll();
+  });
+
+  /* ============ RENDER: INVESTORS ============ */
+  function renderInvestors(){
+    var totalCapital = investors.reduce(function(s,i){ return s+(Number(i.contribution)||0); },0);
+    var totalBalance = investors.reduce(function(s,i){ return s+(Number(i.balance)||0); },0);
+    var totalFees = investors.reduce(function(s,i){ return s+investorEarnings(i).fee; },0);
+    var inLockup = investors.filter(function(i){ return lockupStatus(i).cls==='warn' && lockupStatus(i).daysLeft>14; }).length;
+    var eligible = investors.filter(function(i){ return lockupStatus(i).cls==='ok'; }).length;
+
+    document.getElementById('investorsStatGrid').innerHTML =
+      stat("Investors", investors.length, "", "neutral") +
+      stat("Capital contributed", money(totalCapital), "original contributions", "neutral") +
+      stat("Current value", money(totalBalance), "across all investor accounts", "neutral") +
+      stat("In lock-up", inLockup, "not yet redemption-eligible", "neutral") +
+      stat("Redemption eligible", eligible, "past lock-up, subject to notice", "ok") +
+      stat("Est. performance fees", money(totalFees), "revenue to Empire One, §7.2", "ok");
+
+    var soon = investors.filter(function(i){ var ls=lockupStatus(i); return ls.cls==='warn' && ls.daysLeft<=14; });
+    if(soon.length){
+      document.getElementById('investorsBanner').innerHTML =
+        '<div class="alert alert-warning d-flex align-items-start gap-2 py-2" role="alert"><i class="bi bi-clock-history mt-1"></i><div><b>'+soon.length+' investor account(s) exit lock-up within 14 days.</b> Ops should prepare the redemption-window notice per Investor Agreement §5.</div></div>';
+    } else if(investors.length){
+      document.getElementById('investorsBanner').innerHTML = bannerHtml('ok','No upcoming lock-up transitions.','No investor account exits lock-up in the next 14 days.');
+    } else {
+      document.getElementById('investorsBanner').innerHTML = '';
+    }
+
+    var el = document.getElementById('investorsTable');
+    var head = '<thead><tr><th>Investor</th><th>Contribution</th><th>Balance</th><th>High-water mark</th>'+
+      '<th>Fee %</th><th>Lock-up status</th><th>Est. Fee</th><th></th></tr></thead>';
+    var rows = investors.map(function(i){
+      var ie = investorEarnings(i);
+      var ls = lockupStatus(i);
+      return '<tr>'+
+        '<td><input type="text" class="form-control form-control-sm tbl-input" value="'+attr(i.name)+'" data-if="name" data-id="'+i.id+'"></td>'+
+        iNumCell(i.id,'contribution',i.contribution) +
+        iNumCell(i.id,'balance',i.balance) +
+        iNumCell(i.id,'hwm',i.hwm) +
+        iNumCell(i.id,'performanceFeePct',i.performanceFeePct) +
+        '<td>'+badge(ls)+(ls.daysLeft>0?' <span class="note">'+ls.daysLeft+'d</span>':'')+'</td>'+
+        '<td>'+feeCell(ie.fee)+' <button class="btn btn-outline-e1 btn-sm py-0 px-1" data-earn="investor" data-id="'+i.id+'" title="Breakdown"><i class="bi bi-info-circle"></i></button></td>'+
+        '<td><button class="btn btn-outline-e1 btn-sm btn-del" data-idel="'+i.id+'"><i class="bi bi-x-lg"></i></button></td>'+
+        '</tr>';
+    }).join('');
+    el.innerHTML = head + '<tbody>' + (rows || emptyRow(8,"No investors yet — add one below.")) + '</tbody>';
+
+    el.querySelectorAll('[data-if]').forEach(function(input){
+      input.addEventListener('change', function(){
+        var i = investors.find(function(x){ return x.id === input.getAttribute('data-id'); }); if(!i) return;
+        i[input.getAttribute('data-if')] = input.value;
+        saveInvestors(); renderAll();
+      });
+    });
+    el.querySelectorAll('[data-idel]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        investors = investors.filter(function(i){ return i.id !== btn.getAttribute('data-idel'); });
+        saveInvestors(); renderAll();
+      });
+    });
+  }
+  function iNumCell(id,field,val){
+    return '<td class="tbl-num"><input type="number" class="form-control form-control-sm" step="0.1" value="'+val+'" data-if="'+field+'" data-id="'+id+'"></td>';
+  }
+  document.getElementById('addInvestorBtn').addEventListener('click', function(){
+    investors.push(mkInvestor()); saveInvestors(); renderAll();
+  });
+
+  /* ============ RENDER: REMITTANCE TRACKER ============ */
+  function renderRemittance(){
+    var rows = [];
+    fundedAccounts.forEach(function(a){
+      var earn = fundedEarnings(a);
+      var owed = amountOwed(earn);
+      if(owed <= 0) return;
+      var rec = getRemitRecord('funded', a.id);
+      var due = dueDateFor('funded', rec);
+      var st = remittanceStatus(rec, due, owed);
+      if(!st) return;
+      var t = trader(a.traderId);
+      rows.push({ rec:rec, st:st, due:due, owed:owed, traderName: t?t.name:"—", label: a.firm+" ("+a.phase+")", accountType:'funded' });
+    });
+    liveAccounts.forEach(function(a){
+      var earn = liveEarnings(a);
+      var owed = amountOwed(earn);
+      if(owed <= 0) return;
+      var rec = getRemitRecord('live', a.id);
+      var due = dueDateFor('live', rec);
+      var st = remittanceStatus(rec, due, owed);
+      if(!st) return;
+      var t = trader(a.traderId);
+      rows.push({ rec:rec, st:st, due:due, owed:owed, traderName: t?t.name:"—", label: a.label, accountType:'live' });
+    });
+
+    var overdue = rows.filter(function(r){ return r.st.cls==='bad'; });
+    var dueSoon = rows.filter(function(r){ return r.st.label==='Due Soon' || r.st.label==='Level 1 Late'; });
+    var totalOwed = rows.filter(function(r){ return r.st.label!=='Complete'; }).reduce(function(s,r){ return s+r.owed; },0);
+    var complete = rows.filter(function(r){ return r.st.label==='Complete'; }).length;
+
+    document.getElementById('remittanceStatGrid').innerHTML =
+      stat("Outstanding remittances", rows.length - complete, "accounts still owed", (rows.length-complete)>0?"neutral":"ok") +
+      stat("Overdue / short", overdue.length, "Level 2+ or short — CRO should suspend", overdue.length>0?"bad":"ok") +
+      stat("Due soon / Level 1", dueSoon.length, "within 2 days or 1-3 days late", dueSoon.length>0?"warn":"ok") +
+      stat("Total outstanding", money(totalOwed), "not yet fully remitted", totalOwed>0?"warn":"ok");
+
+    document.getElementById('remittanceBanner').innerHTML = overdue.length
+      ? bannerHtml('bad', overdue.length+' remittance(s) at Level 2 or worse.', 'Per Master Plan §10.4, trading access on these accounts should be suspended until resolved — log the corresponding entry in the Violation Log if not already done.')
+      : (rows.length ? bannerHtml('ok','No remittances are currently overdue.','Everything owed is either complete or still within its due window.') : '');
+
+    var el = document.getElementById('remittanceTable');
+    if(rows.length===0){
+      el.innerHTML = '<tbody><tr class="empty-row"><td colspan="8">No outstanding remittances \u2014 either nothing owed yet, or everything has been forwarded.</td></tr></tbody>';
+    } else {
+      rows.sort(function(a,b){ return a.due - b.due; });
+      var head = '<thead><tr><th>Trader</th><th>Account</th><th>Amount Owed</th>'+
+        '<th>'+'Payout / Trigger Date'+'</th><th>Due</th><th>Remitted</th><th>Method / Ref</th><th>Status</th></tr></thead>';
+      var body = rows.map(function(r){
+        var payoutCell = r.accountType==='funded'
+          ? '<input type="date" class="form-control form-control-sm" style="max-width:140px;" value="'+r.rec.payoutDate+'" data-remitfield="payoutDate" data-id="'+r.rec.id+'">'
+          : '<span class="note">Weekly (Fri)</span>';
+        var remittedCell = '<div class="form-check mb-1"><input class="form-check-input" type="checkbox" data-remitfield="remitted" data-id="'+r.rec.id+'" '+(r.rec.remitted?'checked':'')+'></div>' +
+          (r.rec.remitted ? '<input type="number" class="form-control form-control-sm" style="max-width:100px;" step="1" value="'+r.rec.remittedAmount+'" placeholder="Amount" data-remitfield="remittedAmount" data-id="'+r.rec.id+'">' : '');
+        var refCell = r.rec.remitted
+          ? '<input type="text" class="form-control form-control-sm mb-1" style="max-width:140px;" placeholder="Bank/Wise ref" value="'+attr(r.rec.reference)+'" data-remitfield="reference" data-id="'+r.rec.id+'">'
+          : '<span class="note">—</span>';
+        return '<tr>'+
+          '<td>'+esc(r.traderName)+'</td>'+
+          '<td>'+esc(r.label)+'</td>'+
+          '<td class="mono fw-semibold">'+money(r.owed)+'</td>'+
+          '<td>'+payoutCell+'</td>'+
+          '<td class="note">'+fmtDate(r.due)+'</td>'+
+          '<td>'+remittedCell+'</td>'+
+          '<td>'+refCell+'</td>'+
+          '<td>'+badge(r.st)+'</td>'+
+          '</tr>';
+      }).join('');
+      el.innerHTML = head + '<tbody>' + body + '</tbody>';
+    }
+
+    el.querySelectorAll('[data-remitfield]').forEach(function(input){
+      input.addEventListener('change', function(){
+        var rec = remittances.find(function(r){ return r.id === input.getAttribute('data-id'); });
+        if(!rec) return;
+        var f = input.getAttribute('data-remitfield');
+        if(f==='remitted'){
+          rec.remitted = input.checked;
+          if(rec.remitted && !rec.remittedDate) rec.remittedDate = todayISO();
+        } else if(f==='remittedAmount'){
+          rec.remittedAmount = parseFloat(input.value)||0;
+        } else {
+          rec[f] = input.value;
+        }
+        saveRemittances(); renderAll();
+      });
+    });
+  }
+
+  /* ============ DIVIDEND DECLARATION ENGINE ============ */
+  // Master Plan §7.2 Layer 5/6, §10.5: the Day 20 pool is whatever's left in reinvestmentPool
+  // across every account after Layer 6 (Dev/Ops Reserve) is carved out — this is the ONLY
+  // amount a dividend can be declared from, never the trader's own share.
+  function dividendPool(){
+    return fundedAccounts.reduce(function(s,a){ return s + fundedEarnings(a).reinvestmentPool; },0)
+         + liveAccounts.reduce(function(s,a){ return s + liveEarnings(a).reinvestmentPool; },0);
+  }
+  function dividendSplits(pool){
+    var weighted = roster.map(function(t){ return { trader:t, w: equityWeight(t.contribution).weight }; });
+    var totalWeight = weighted.reduce(function(s,x){ return s+x.w; }, 0);
+    if(totalWeight<=0) return [];
+    return weighted.map(function(x){
+      return { traderId:x.trader.id, name:x.trader.name, bracket:equityWeight(x.trader.contribution).bracket,
+        weight:x.w, amount: pool * (x.w/totalWeight) };
+    });
+  }
+  function renderDividend(){
+    var pool = dividendPool();
+    var votesInput = document.getElementById('divVotesFor');
+    var votes = votesInput ? (parseInt(votesInput.value,10)||0) : 0;
+    var approved = votes >= 6;
+
+    document.getElementById('dividendStatGrid').innerHTML =
+      stat("Day 20 pool available", money(pool), "post-Layer-6 reinvestment, §7.2/§10", "neutral") +
+      stat("Active Members", roster.length, "voting base for §8 threshold", "neutral") +
+      stat("Vote threshold", "6 of 10", "Member Agreement §8", "neutral") +
+      stat("Declarations logged", dividendLog.length, "all-time", "neutral");
+
+    var statusEl = document.getElementById('divVoteStatus');
+    statusEl.innerHTML = votes>0
+      ? badge({label: approved ? "Approved — "+votes+"/10" : "Not approved — "+votes+"/10 (needs 6)", cls: approved?"ok":"bad"})
+      : '<span class="note">Enter the vote count from the Day 20 meeting</span>';
+
+    var splits = dividendSplits(pool);
+    var splitEl = document.getElementById('dividendSplitTable');
+    var head = '<thead><tr><th>Member</th><th>Bracket</th><th>Weight</th><th>Proposed Share</th></tr></thead>';
+    var rows = splits.map(function(s){
+      return '<tr><td>'+esc(s.name)+'</td><td>'+esc(s.bracket)+'</td><td class="mono">'+s.weight+'x</td><td class="mono fw-semibold">'+money(s.amount)+'</td></tr>';
+    }).join('');
+    splitEl.innerHTML = head + '<tbody>' + (rows || emptyRow(4,"Add traders with contribution amounts on Traders & Tiers first.")) + '</tbody>';
+
+    var declareBtn = document.getElementById('declareDividendBtn');
+    declareBtn.disabled = !(approved && pool>0 && splits.length>0);
+
+    var histEl = document.getElementById('dividendHistoryTable');
+    var histHead = '<thead><tr><th>Date</th><th>Total Declared</th><th>Votes</th><th>Recipients</th></tr></thead>';
+    var sorted = dividendLog.slice().sort(function(a,b){ return new Date(b.date)-new Date(a.date); });
+    var histRows = sorted.map(function(d){
+      return '<tr><td>'+esc(d.date)+'</td><td class="mono fw-semibold">'+money(d.total)+'</td><td>'+d.votesFor+'/10</td><td>'+d.splits.length+'</td></tr>';
+    }).join('');
+    histEl.innerHTML = histHead + '<tbody>' + (histRows || emptyRow(4,"No dividends declared yet.")) + '</tbody>';
+  }
+  document.getElementById('divVotesFor').addEventListener('change', function(){ renderDividend(); });
+  document.getElementById('divVotesFor').addEventListener('input', function(){ renderDividend(); });
+  document.getElementById('declareDividendBtn').addEventListener('click', function(){
+    var pool = dividendPool();
+    var votes = parseInt(document.getElementById('divVotesFor').value,10)||0;
+    if(votes<6 || pool<=0) return;
+    var splits = dividendSplits(pool);
+    dividendLog.push({ id: uid(), date: todayISO(), total: pool, votesFor: votes, splits: splits });
+    saveDividendLog();
+    document.getElementById('divVotesFor').value = '0';
+    renderAll();
+  });
+
+  /* ============ RENDER: EXPOSURE ============ */
+  function renderExposureForm(){
+    var el = document.getElementById('exposureTable');
+    var head = '<thead><tr><th>Trader</th><th>Instrument</th><th>Direction</th><th>Size (% of group capital)</th><th></th></tr></thead>';
+    var rows = exposureSheet.map(function(x){
+      return '<tr>'+
+        '<td><select class="form-select form-select-sm" data-ef="trader" data-id="'+x.id+'">'+
+          roster.map(function(t){ return '<option value="'+attr(t.name)+'"'+(t.name===x.trader?' selected':'')+'>'+esc(t.name)+'</option>'; }).join('') +
+        '</select></td>'+
+        '<td><input type="text" class="form-control form-control-sm" value="'+attr(x.instrument)+'" data-ef="instrument" data-id="'+x.id+'" placeholder="e.g. EUR/USD"></td>'+
+        '<td><select class="form-select form-select-sm" data-ef="direction" data-id="'+x.id+'">'+
+          ['Long','Short'].map(function(d){ return '<option value="'+d+'"'+(d===x.direction?' selected':'')+'>'+d+'</option>'; }).join('') +
+        '</select></td>'+
+        '<td class="tbl-num"><input type="number" class="form-control form-control-sm" step="1" value="'+x.sizePct+'" data-ef="sizePct" data-id="'+x.id+'"></td>'+
+        '<td><button class="btn btn-outline-e1 btn-sm btn-del" data-xdel="'+x.id+'"><i class="bi bi-x-lg"></i></button></td>'+
+        '</tr>';
+    }).join('');
+    el.innerHTML = head + '<tbody>' + (rows || emptyRow(5,"No open positions logged.")) + '</tbody>';
+
+    el.querySelectorAll('[data-ef]').forEach(function(input){
+      input.addEventListener('change', function(){
+        var row = exposureSheet.find(function(x){ return x.id === input.getAttribute('data-id'); }); if(!row) return;
+        var f = input.getAttribute('data-ef');
+        row[f] = (f==='sizePct') ? (parseFloat(input.value)||0) : input.value;
+        saveExposure(); renderAll();
+      });
+    });
+    el.querySelectorAll('[data-xdel]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        exposureSheet = exposureSheet.filter(function(x){ return x.id !== btn.getAttribute('data-xdel'); });
+        saveExposure(); renderAll();
+      });
+    });
+  }
+  document.getElementById('addExposureBtn').addEventListener('click', function(){
+    var firstTrader = roster[0] ? roster[0].name : '';
+    exposureSheet.push({ id: uid(), trader:firstTrader, instrument:'', direction:'Long', sizePct:0 });
+    saveExposure(); renderAll();
+  });
+  function groupExposure(){
+    var map = {};
+    exposureSheet.forEach(function(x){
+      var key = (x.instrument||'—') + ' · ' + x.direction;
+      map[key] = (map[key]||0) + (Number(x.sizePct)||0);
+    });
+    return Object.keys(map).map(function(k){ return {key:k, pct:map[k]}; }).sort(function(a,b){ return b.pct-a.pct; });
+  }
+  function renderExposureGroups(){
+    var el = document.getElementById('exposureGroupTable');
+    var groups = groupExposure();
+    var head = '<thead><tr><th>Instrument &amp; direction</th><th>Combined size</th><th>Status</th></tr></thead>';
+    var rows = groups.map(function(g){
+      var cls = g.pct>=40 ? 'bad' : (g.pct>=30 ? 'warn':'ok');
+      var label = g.pct>=40 ? 'Cap exceeded' : (g.pct>=30 ? 'Approaching cap':'Within cap');
+      return '<tr><td>'+esc(g.key)+'</td><td>'+g.pct.toFixed(0)+'%</td><td>'+badge({cls:cls,label:label})+'</td></tr>';
+    }).join('');
+    el.innerHTML = head + '<tbody>' + (rows || emptyRow(3,"No exposure logged yet.")) + '</tbody>';
+
+    var breach = groups.find(function(g){ return g.pct>=40; });
+    document.getElementById('exposureBanner').innerHTML = breach
+      ? bannerHtml('bad','40% correlation cap exceeded on '+esc(breach.key)+' at '+breach.pct.toFixed(0)+'%', 'Per Risk Protocol §4, reduce the newest positions in that direction first.')
+      : bannerHtml('ok','Within limits.','Group exposure is within the 40% correlation cap on every instrument/direction.');
+  }
+
+  /* ============ RENDER: WORKFLOW ============ */
+  function renderWorkflow(){
+    document.getElementById('workflowMonthLabel').textContent = 'Current cycle: ' + workflow.month;
+    var el = document.getElementById('workflowList');
+    el.innerHTML = WORKFLOW_DAYS.map(function(d){
+      var checked = !!workflow.checks[d.key];
+      return '<div class="d-flex gap-3 align-items-start py-2 border-bottom" style="border-color:var(--e1-line)!important;">'+
+        '<div class="form-check mt-1"><input class="form-check-input" type="checkbox" data-wf="'+d.key+'" '+(checked?'checked':'')+'></div>'+
+        '<div class="mono note" style="width:64px;color:var(--e1-gold);flex:0 0 auto;">'+d.day+'</div>'+
+        '<div><div class="fw-semibold small'+(checked?' text-decoration-line-through text-secondary':'')+'">'+d.title+'</div><div class="note">'+d.desc+'</div></div>'+
+        '</div>';
+    }).join('');
+    el.querySelectorAll('[data-wf]').forEach(function(cb){
+      cb.addEventListener('change', function(){
+        workflow.checks[cb.getAttribute('data-wf')] = cb.checked;
+        saveWorkflow(); renderWorkflow();
+      });
+    });
+  }
+  document.getElementById('resetWorkflowBtn').addEventListener('click', function(){
+    workflow = { month: currentMonthLabel(), checks:{} };
+    saveWorkflow(); renderWorkflow();
+  });
+
+  /* ============ RENDER: REFERENCE ============ */
+  function renderReference(){
+    var el = document.getElementById('refGrid');
+    el.innerHTML = '<div class="row">' + buildRefRows().map(function(r){
+      return '<div class="col-md-6"><div class="d-flex justify-content-between border-bottom py-2" style="border-color:var(--e1-line)!important;font-size:12.5px;">'+
+        '<span class="text-secondary">'+r[0]+'</span><span class="mono fw-semibold">'+r[1]+'</span></div></div>';
+    }).join('') + '</div>';
+  }
+
+  /* ============ RENDER: SETTINGS ============ */
+  function settingsInput(getPath, val, step){
+    return '<input type="number" class="form-control form-control-sm" style="max-width:120px;" step="'+(step||'0.1')+'" value="'+val+'" data-setpath="'+getPath+'">';
+  }
+  function labelRow(label, inputHtml, sub){
+    return '<tr><td style="width:60%;">'+label+(sub?'<div class="note">'+sub+'</div>':'')+'</td><td>'+inputHtml+'</td></tr>';
+  }
+  function renderSettings(){
+    var th = settings.thresholds;
+    document.getElementById('settingsThresholdsTable').innerHTML = '<tbody>' +
+      labelRow("Daily warning threshold (%)", settingsInput("thresholds.dailyWarn", th.dailyWarn), "Soft warning — CRO notified, no halt") +
+      labelRow("Daily hard stop (%)", settingsInput("thresholds.dailyStop", th.dailyStop), "Trading halted for the rest of the day") +
+      labelRow("Weekly review threshold (%)", settingsInput("thresholds.weeklyReview", th.weeklyReview), "Mandatory CRO 1:1 before next session") +
+      labelRow("Weekly pause threshold (%)", settingsInput("thresholds.weeklyPause", th.weeklyPause), "Account paused until CRO + MD review") +
+      labelRow("Monthly simulation-mode threshold (%)", settingsInput("thresholds.monthlySim", th.monthlySim), "Moved to simulation mode, Master Plan §7.1") +
+      labelRow("Live account drawdown pause (%)", settingsInput("thresholds.liveDDPause", th.liveDDPause), "From high-water mark — Master Plan §4.7") +
+      labelRow("Group correlation cap (%)", settingsInput("thresholds.exposureCap", th.exposureCap), "Max capital in one instrument/direction — Risk Protocol §4") +
+      labelRow("Max trades per day", settingsInput("maxTradesPerDay", settings.maxTradesPerDay, "1"), "Reference only — Risk Protocol §5") +
+      labelRow("News blackout window (minutes)", settingsInput("newsBlackoutMin", settings.newsBlackoutMin, "1"), "Before/after tier-1 releases — Risk Protocol §7") +
+      '</tbody>';
+
+    var ps = settings.propSplit, ls = settings.liveSplit;
+    document.getElementById('settingsSplitsTable').innerHTML =
+      '<thead><tr><th>Tier</th><th>Prop-Firm Split (Trader %)</th><th>Live Split (Trader %)</th></tr></thead><tbody>' +
+      TIERS.map(function(t){
+        return '<tr><td><span class="tier-pill tier-'+t+'">'+t+'</span></td>'+
+          '<td>'+settingsInput("propSplit."+t, ps[t], "1")+'</td>'+
+          '<td>'+settingsInput("liveSplit."+t, ls[t]||0, "1")+'</td></tr>';
+      }).join('') + '</tbody>';
+
+    var wf = settings.waterfall;
+    document.getElementById('settingsWaterfallTable').innerHTML = '<tbody>' +
+      labelRow("Compliance & Legal Reserve (%)", settingsInput("waterfall.complianceReservePct", wf.complianceReservePct), "Layer 2 of §7.2 — 5% current rate") +
+      labelRow("CRO override (%)", settingsInput("waterfall.croPct", wf.croPct, "0.5"), "Layer 3 of §7.2") +
+      labelRow("Ops Manager override (%)", settingsInput("waterfall.opsPct", wf.opsPct, "0.5"), "Layer 3 of §7.2") +
+      labelRow("Head Analyst override (%)", settingsInput("waterfall.analystPct", wf.analystPct, "0.5"), "Layer 3 of §7.2, applies only to pools the Analyst supports") +
+      labelRow("Development & Operating Reserve (% of Layer 5)", settingsInput("waterfall.devOpsPct", wf.devOpsPct, "1"), "Layer 6 of §7.2 — carved out from entity reinvestment before the Day 20 meeting, no floor") +
+      '</tbody>';
+    document.getElementById('waterfallTotalNote').textContent = "Total role overrides (Layer 3): " + roleOverridePct().toFixed(1) + "% · Layer 6 takes " + (Number(wf.devOpsPct)||0) + "% of whatever Layer 5 collects";
+
+    var el = document.getElementById('settingsFirmsTable');
+    var firmNames = Object.keys(settings.firmPresets);
+    el.innerHTML = '<thead><tr><th>Firm</th><th>Daily limit (%)</th><th>Max limit (%)</th><th>Payout split (%)</th><th></th></tr></thead><tbody>' +
+      firmNames.map(function(f){
+        var p = settings.firmPresets[f];
+        return '<tr><td>'+esc(f)+'</td>'+
+          '<td><input type="number" class="form-control form-control-sm" style="max-width:100px;" step="0.5" value="'+p.dailyLimit+'" data-firmfield="dailyLimit" data-firm="'+attr(f)+'"></td>'+
+          '<td><input type="number" class="form-control form-control-sm" style="max-width:100px;" step="0.5" value="'+p.maxLimit+'" data-firmfield="maxLimit" data-firm="'+attr(f)+'"></td>'+
+          '<td><input type="number" class="form-control form-control-sm" style="max-width:100px;" step="1" value="'+p.payoutSplit+'" data-firmfield="payoutSplit" data-firm="'+attr(f)+'"></td>'+
+          '<td>'+(f!=="Custom" ? '<button class="btn btn-outline-e1 btn-sm btn-del" data-firmdel="'+attr(f)+'"><i class="bi bi-x-lg"></i></button>' : '<span class="note">required</span>')+'</td></tr>';
+      }).join('') + '</tbody>';
+    el.querySelectorAll('[data-firmfield]').forEach(function(input){
+      input.addEventListener('change', function(){
+        var firm = input.getAttribute('data-firm'), field = input.getAttribute('data-firmfield');
+        if(!settings.firmPresets[firm]) return;
+        settings.firmPresets[firm][field] = parseFloat(input.value)||0;
+        saveSettings(); renderAll();
+      });
+    });
+    el.querySelectorAll('[data-firmdel]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var firm = btn.getAttribute('data-firmdel');
+        var inUse = fundedAccounts.some(function(a){ return a.firm===firm; });
+        if(inUse && !confirm('One or more funded accounts currently use "'+firm+'". Delete this preset anyway? Those accounts keep their existing numbers but the dropdown will fall back to Custom.')) return;
+        delete settings.firmPresets[firm];
+        saveSettings(); renderAll();
+      });
+    });
+
+    var id = settings.investorDefaults;
+    document.getElementById('settingsInvestorTable').innerHTML = '<tbody>' +
+      labelRow("Minimum initial investment ($)", settingsInput("investorDefaults.minContribution", id.minContribution, "100"), "Investor Agreement §2") +
+      labelRow("Default lock-up period (days)", settingsInput("investorDefaults.lockupDays", id.lockupDays, "1"), "Investor Agreement §2") +
+      labelRow("Default performance fee (%)", settingsInput("investorDefaults.performanceFeePct", id.performanceFeePct, "0.5"), "Investor Agreement §3 — 15–20% typical range") +
+      '</tbody>';
+
+    document.querySelectorAll('#view-settings [data-setpath]').forEach(function(input){
+      input.addEventListener('change', function(){
+        setByPath(settings, input.getAttribute('data-setpath'), parseFloat(input.value)||0);
+        saveSettings(); renderAll();
+      });
+    });
+  }
+  function setByPath(obj, path, val){
+    var parts = path.split('.');
+    var cur = obj;
+    for(var i=0;i<parts.length-1;i++){ cur = cur[parts[i]]; }
+    cur[parts[parts.length-1]] = val;
+  }
+  document.getElementById('addFirmBtn').addEventListener('click', function(){
+    var input = document.getElementById('newFirmName');
+    var name = (input.value||'').trim();
+    if(!name || settings.firmPresets[name]) return;
+    settings.firmPresets[name] = {dailyLimit:5, maxLimit:10, payoutSplit:80};
+    input.value = '';
+    saveSettings(); renderAll();
+  });
+  document.querySelectorAll('#view-settings [data-reset]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var section = btn.getAttribute('data-reset');
+      var d = cloneDefaults();
+      if(section==='thresholds') settings.thresholds = d.thresholds;
+      if(section==='splits'){ settings.propSplit = d.propSplit; settings.liveSplit = d.liveSplit; }
+      if(section==='waterfall') settings.waterfall = d.waterfall;
+      if(section==='firms') settings.firmPresets = d.firmPresets;
+      if(section==='investorDefaults') settings.investorDefaults = d.investorDefaults;
+      saveSettings(); renderAll();
+    });
+  });
+  document.getElementById('resetAllSettingsBtn').addEventListener('click', function(){
+    if(!confirm('Reset every setting to Empire One FX defaults? This does not affect trader, account, or investor data.')) return;
+    settings = cloneDefaults();
+    saveSettings(); renderAll();
+  });
+
+  /* ============ UTIL ============ */
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+  function attr(s){ return esc(s); }
+  function emptyRow(colspan,msg){ return '<tr class="empty-row"><td colspan="'+colspan+'">'+msg+'</td></tr>'; }
+  function todayISO(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+
+  /* ============ RENDER ALL ============ */
+  function renderAll(){
+    renderOverview();
+    renderRoster();
+    renderDaily();
+    renderKpi();
+    renderViolationForm();
+    renderViolationTable();
+    renderFunded();
+    renderLive();
+    renderInvestors();
+    renderRemittance();
+    renderDividend();
+    renderExposureForm();
+    renderExposureGroups();
+    renderWorkflow();
+    renderReference();
+    renderSettings();
+    document.getElementById('flagViol').className = 'flag'+(violationLog.some(function(v){return v.level>=3;})?' show':'');
+    document.getElementById('flagFunded').className = 'flag'+(fundedAccounts.some(function(a){return fundedStatus(a).cls==='bad';})?' show':'');
+    document.getElementById('flagLive').className = 'flag'+(liveAccounts.some(function(a){return liveStatus(a).cls==='bad';})?' show':'');
+    document.getElementById('flagInvestors').className = 'flag'+(investors.some(function(i){ var ls=lockupStatus(i); return ls.cls==='warn' && ls.daysLeft<=14; })?' show':'');
+    var anyOverdue = fundedAccounts.some(function(a){
+      var earn = fundedEarnings(a); var owed = amountOwed(earn); if(owed<=0) return false;
+      var rec = getRemitRecord('funded', a.id); var due = dueDateFor('funded', rec);
+      var st = remittanceStatus(rec, due, owed); return st && st.cls==='bad';
+    }) || liveAccounts.some(function(a){
+      var earn = liveEarnings(a); var owed = amountOwed(earn); if(owed<=0) return false;
+      var rec = getRemitRecord('live', a.id); var due = dueDateFor('live', rec);
+      var st = remittanceStatus(rec, due, owed); return st && st.cls==='bad';
+    });
+    document.getElementById('flagRemit').className = 'flag'+(anyOverdue?' show':'');
+  }
+
+  // Test hooks only — lets an automated check re-trigger a load and inspect current settings
+  // without needing a real page reload. No effect on normal use.
+  if(typeof window !== 'undefined'){
+    window.__e1_reload = loadAll;
+    window.__e1_settings = function(){ return settings; };
+  }
+
+  loadAll();
+})();
+</script>
+</body>
+</html>
