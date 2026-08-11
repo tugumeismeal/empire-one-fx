@@ -11,6 +11,7 @@
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
 <style>
   :root{
@@ -140,6 +141,70 @@
 
   .note{ font-size:11.5px; color:var(--e1-ink-faint); }
 
+  /* Dashboard KPI Cards */
+  .kpi-card { 
+    background: linear-gradient(135deg, var(--e1-panel) 0%, var(--e1-panel-2) 100%);
+    border:1px solid var(--e1-line); 
+    border-radius:12px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    height: 100%;
+  }
+  .kpi-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+  }
+  .kpi-card .kpi-icon {
+    width: 48px; height: 48px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+    margin-bottom: 12px;
+  }
+  .kpi-card .kpi-label { 
+    font-size: 11px; 
+    text-transform: uppercase; 
+    letter-spacing: 0.08em; 
+    color: var(--e1-ink-dim);
+    margin-bottom: 6px;
+  }
+  .kpi-card .kpi-value { 
+    font-family: var(--mono); 
+    font-size: 28px; 
+    font-weight: 700;
+    line-height: 1.2;
+  }
+  .kpi-card .kpi-sub { 
+    font-size: 11px; 
+    color: var(--e1-ink-faint); 
+    margin-top: 4px;
+  }
+  .kpi-icon.blue { background: rgba(62,143,168,0.15); color: #3E8FA8; }
+  .kpi-icon.green { background: rgba(95,213,131,0.15); color: #5FD583; }
+  .kpi-icon.gold { background: rgba(201,162,39,0.15); color: #C9A227; }
+  .kpi-icon.red { background: rgba(214,69,69,0.15); color: #D64545; }
+  .kpi-icon.purple { background: rgba(147,112,219,0.15); color: #9370DB; }
+  
+  /* Chart containers */
+  .chart-container {
+    position: relative;
+    height: 300px;
+    width: 100%;
+  }
+  .chart-card {
+    background: var(--e1-panel);
+    border: 1px solid var(--e1-line);
+    border-radius: 12px;
+    padding: 20px;
+  }
+  .chart-title {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 16px;
+    color: #E7EEF2;
+  }
+
+  .note{ font-size:11.5px; color:var(--e1-ink-faint); }
+
   .modal-content{ background:var(--e1-panel); border:1px solid var(--e1-line); color:#E7EEF2; }
   .waterfall-row{
     display:flex; justify-content:space-between; padding:9px 0; border-bottom:1px dashed var(--e1-line); font-size:13px;
@@ -210,7 +275,40 @@
       <p class="text-secondary small" style="max-width:640px;">Pulled live from every tab, including a real-time estimate of what traders would actually be paid on current profit — using the tier splits and waterfall from Master Plan §7.</p>
     </div>
     <div id="overviewBanner"></div>
-    <div class="row g-3 mb-2" id="statGrid"></div>
+    
+    <!-- Enhanced KPI Cards Grid -->
+    <div class="row g-3 mb-4" id="kpiCardGrid"></div>
+    
+    <!-- Charts Row -->
+    <div class="row g-3 mb-4">
+      <div class="col-md-6">
+        <div class="chart-card">
+          <div class="chart-title"><i class="bi bi-pie-chart-fill me-2"></i>Capital Distribution</div>
+          <div class="chart-container">
+            <canvas id="capitalChart"></canvas>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="chart-card">
+          <div class="chart-title"><i class="bi bi-bar-chart-fill me-2"></i>Exposure by Group</div>
+          <div class="chart-container">
+            <canvas id="exposureChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="row g-3 mb-4">
+      <div class="col-12">
+        <div class="chart-card">
+          <div class="chart-title"><i class="bi bi-graph-up me-2"></i>Trader Performance Overview</div>
+          <div class="chart-container" style="height: 250px;">
+            <canvas id="performanceChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <div class="card mt-4">
       <div class="card-body">
@@ -844,6 +942,11 @@
       link.classList.add('active');
       document.querySelectorAll('.view').forEach(function(v){ v.classList.remove('active'); });
       document.getElementById('view-' + target).classList.add('active');
+      
+      // Re-render charts when overview tab is activated
+      if (target === 'overview') {
+        setTimeout(renderCharts, 100);
+      }
     });
   });
   navLinks[0].classList.add('active');
@@ -1120,6 +1223,139 @@
       '</div></div></div>';
   }
 
+  function kpiCard(iconClass, iconType, label, value, sub, color) {
+    return '<div class="col-md-3 col-sm-6">' +
+      '<div class="kpi-card p-3">' +
+        '<div class="kpi-icon '+color+'"><i class="bi bi-'+iconClass+'"></i></div>' +
+        '<div class="kpi-label">'+label+'</div>' +
+        '<div class="kpi-value">'+value+'</div>' +
+        '<div class="kpi-sub">'+sub+'</div>' +
+      '</div>' +
+    '</div>';
+  }
+
+  // Chart instances storage
+  var capitalChartInstance = null;
+  var exposureChartInstance = null;
+  var performanceChartInstance = null;
+
+  function renderCharts() {
+    // Capital Distribution Pie Chart
+    var totalLive = liveAccounts.reduce(function(s,a){ return s + (Number(a.balance)||0); }, 0);
+    var totalFunded = fundedAccounts.reduce(function(s,a){ return s + (Number(a.balance)||0); }, 0);
+    var totalInvestor = investors.reduce(function(s,i){ return s + (Number(i.balance)||0); }, 0);
+    
+    var capitalCtx = document.getElementById('capitalChart');
+    if (capitalCtx) {
+      if (capitalChartInstance) capitalChartInstance.destroy();
+      capitalChartInstance = new Chart(capitalCtx, {
+        type: 'doughnut',
+        data: {
+          labels: ['Live Accounts', 'Funded Accounts', 'Investor Accounts'],
+          datasets: [{
+            data: [totalLive, totalFunded, totalInvestor],
+            backgroundColor: ['#3E8FA8', '#C9A227', '#9370DB'],
+            borderWidth: 0
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: { color: '#8FA3AF', padding: 15, font: { size: 11 } }
+            }
+          }
+        }
+      });
+    }
+
+    // Exposure by Group Bar Chart
+    var groups = groupExposure();
+    var exposureCtx = document.getElementById('exposureChart');
+    if (exposureCtx) {
+      if (exposureChartInstance) exposureChartInstance.destroy();
+      exposureChartInstance = new Chart(exposureCtx, {
+        type: 'bar',
+        data: {
+          labels: groups.map(function(g){ return g.group || 'Unknown'; }),
+          datasets: [{
+            label: 'Exposure %',
+            data: groups.map(function(g){ return g.pct; }),
+            backgroundColor: groups.map(function(g){ 
+              return g.pct >= 40 ? '#D64545' : (g.pct >= 30 ? '#D99A2B' : '#3E8FA8');
+            }),
+            borderRadius: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              grid: { color: '#1E3240' },
+              ticks: { color: '#8FA3AF', callback: function(v){ return v + '%'; } }
+            },
+            x: {
+              grid: { display: false },
+              ticks: { color: '#8FA3AF', font: { size: 10 } }
+            }
+          }
+        }
+      });
+    }
+
+    // Trader Performance Overview
+    var perfCtx = document.getElementById('performanceChart');
+    if (perfCtx) {
+      if (performanceChartInstance) performanceChartInstance.destroy();
+      
+      var traderPerf = roster.map(function(t) {
+        var fundedAccs = fundedOf(t.id);
+        var liveAccs = liveOf(t.id);
+        var totalProfit = fundedAccs.reduce(function(s,a){ return s + (Number(a.pnl)||0); }, 0) +
+                         liveAccs.reduce(function(s,a){ return s + (Number(a.pnl)||0); }, 0);
+        return { name: t.name, profit: totalProfit };
+      }).sort(function(a,b){ return b.profit - a.profit; }).slice(0, 8);
+
+      performanceChartInstance = new Chart(perfCtx, {
+        type: 'bar',
+        data: {
+          labels: traderPerf.map(function(t){ return t.name; }),
+          datasets: [{
+            label: 'Total P&L',
+            data: traderPerf.map(function(t){ return t.profit; }),
+            backgroundColor: traderPerf.map(function(t){ return t.profit >= 0 ? '#5FD583' : '#D64545'; }),
+            borderRadius: 6
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false }
+          },
+          scales: {
+            x: {
+              grid: { color: '#1E3240' },
+              ticks: { color: '#8FA3AF', callback: function(v){ return '$'+v; } }
+            },
+            y: {
+              grid: { display: false },
+              ticks: { color: '#8FA3AF', font: { size: 11 } }
+            }
+          }
+        }
+      });
+    }
+  }
+
   /* ============ RENDER: OVERVIEW ============ */
   function renderOverview(){
     var alertCount = roster.filter(isAlert).length;
@@ -1144,19 +1380,19 @@
       return (now - d)/(1000*60*60*24) <= 90;
     }).length;
 
-    document.getElementById('statGrid').innerHTML =
-      stat("Active traders", roster.length, "", "neutral") +
-      stat("Traders in alert", alertCount, alertCount>0?"needs CRO attention":"all clear", alertCount>0?"bad":"ok") +
-      stat("Funded accounts", fundedLive, fundedInEval+" in evaluation", "neutral") +
-      stat("Funded at risk", fundedAlerts, "breached daily/max loss", fundedAlerts>0?"bad":"ok") +
-      stat("Live accounts paused", liveAlerts, "≥15% drawdown from peak", liveAlerts>0?"bad":"ok") +
-      stat("Max group exposure", maxExp.toFixed(0)+"%", "cap is 40% one direction", maxExp>=40?"bad":(maxExp>=30?"warn":"ok")) +
-      stat("Capital under management", money(totalLive+totalFunded+totalInvestor), money(totalFunded)+" funded · "+money(totalLive)+" live · "+money(totalInvestor)+" investor", "neutral") +
-      stat("Est. trader payouts today", money(totalPayout), "if distributed right now, §7.2", "ok") +
-      stat("Est. Dev/Ops Reserve (Layer 6)", money(totalDevOps), "carved out before Day 20, §7.2", "ok") +
-      stat("Available for Day 20 decision", money(totalReinvestPool), "new challenges · live scaling · dividends", "neutral") +
-      stat("Est. investor fees accrued", money(totalInvestorFees), "revenue to Empire One", "ok") +
-      stat("Violations, last 90d", recentViol, "logged group-wide", recentViol>0?"warn":"ok");
+    // Render enhanced KPI cards
+    document.getElementById('kpiCardGrid').innerHTML =
+      kpiCard('people-fill', 'blue', 'Active Traders', roster.length, '', 'blue') +
+      kpiCard('exclamation-triangle-fill', 'red', 'Traders in Alert', alertCount, alertCount>0?'needs CRO attention':'all clear', alertCount>0?'red':'green') +
+      kpiCard('briefcase-fill', 'gold', 'Total AUM', money(totalLive+totalFunded+totalInvestor), money(totalFunded)+' funded · '+money(totalLive)+' live', 'gold') +
+      kpiCard('graph-up-arrow', 'green', 'Est. Payouts', money(totalPayout), 'if distributed now, §7.2', 'green') +
+      kpiCard('piggy-bank-fill', 'purple', 'Dev/Ops Reserve', money(totalDevOps), 'carved out before Day 20', 'purple') +
+      kpiCard('cash-stack', 'blue', 'Reinvest Pool', money(totalReinvestPool), 'for Day 20 decision', 'blue') +
+      kpiCard('shield-exclamation', 'red', 'Max Exposure', maxExp.toFixed(0)+'%', 'cap is 40% one direction', maxExp>=40?'red':(maxExp>=30?'gold':'green')) +
+      kpiCard('patch-check-fill', 'green', 'Investor Fees', money(totalInvestorFees), 'revenue to Empire One', 'green');
+
+    // Render charts
+    setTimeout(renderCharts, 100);
 
     var banners = [];
     if(maxExp >= 40) banners.push(bannerHtml('bad','Correlation cap breached.','Group exposure has crossed 40% in one direction — see the Exposure Sheet to identify which instrument.'));

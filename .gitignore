@@ -26,62 +26,19 @@ __pycache__/
 .Python
 *.so
 .coverage
+coverage/
 htmlcov/
-.coverage.*
-.python-version
-
-# Dependencies
-node_modules/
-venv/
-.venv/
-.conda/
-mambaforge/
-miniconda/
-anaconda/
 
 # Build artifacts
-dist/
 build/
+dist/
 *.egg-info/
-.tox/
-.coverage*
-nosetests.xml
-coverage.xml
-*.cover
-*.log
-*.tmp
-*.bak
-*.swp
-*.swo
 
-# Testing
-.pytest_cache/
-.hypothesis/
-.coverage*
-
-# Distribution / packaging
-.Python
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-*$py.class
-*$py.data
-**/__pycache__/
-**/*.py[cod]
-**/$py.class
-**/$py.data
-*pickle-cache
-
-# Compiled files
-*.class
-*.o
-*.a
-*.obj
-*.so
-*.dll
-*.exe
-*.out
+# Dependencies
+.venv/
+venv/
+.env/
+node_modules/
 
 # Compressed files
 *.zip
@@ -106,10 +63,4 @@ __pycache__/
 *.tar.bz2
 *.tar.xz
 *.tar.zst
-
-# OS generated files
-.DS_Store?
-ehthumbs.db
-Icon?
-Thumbs.db
 ```
