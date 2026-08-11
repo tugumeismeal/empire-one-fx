@@ -113,6 +113,9 @@
   .form-control.mono, input[type=number].form-control{ font-family:var(--mono); }
   .tbl-num{ width:100px; }
   .tbl-input{ min-width:120px; }
+  input[type=number]::-webkit-inner-spin-button,
+  input[type=number]::-webkit-outer-spin-button{ -webkit-appearance:none; margin:0; }
+  input[type=number]{ -moz-appearance:textfield; }
 
   .tier-pill{ font-size:11px; font-weight:600; padding:2px 9px; border-radius:5px; }
   .tier-Probationary{ background:#241a09; color:#d99a2b; }
@@ -1228,7 +1231,9 @@
     el.querySelectorAll('[data-nf]').forEach(function(input){
       input.addEventListener('change', function(){
         var t = trader(input.getAttribute('data-id')); if(!t) return;
-        t[input.getAttribute('data-nf')] = parseFloat(input.value)||0;
+        var val = parseFloat(input.value);
+        if(isNaN(val) || val < 0){ val = 0; input.value = 0; }
+        t[input.getAttribute('data-nf')] = val;
         saveRoster(); renderAll();
       });
     });
@@ -1271,13 +1276,15 @@
     bindNumInputs(el, saveRoster);
   }
   function numCell(id,field,val){
-    return '<td class="tbl-num"><input type="number" class="form-control form-control-sm" step="0.1" value="'+val+'" data-f="'+field+'" data-id="'+id+'"></td>';
+    return '<td class="tbl-num"><input type="number" class="form-control form-control-sm" step="0.1" min="0" value="'+val+'" data-f="'+field+'" data-id="'+id+'"></td>';
   }
   function bindNumInputs(container, saveFn){
     container.querySelectorAll('input[type=number]').forEach(function(input){
       input.addEventListener('change', function(){
         var t = trader(input.getAttribute('data-id')); if(!t) return;
-        t[input.getAttribute('data-f')] = parseFloat(input.value) || 0;
+        var val = parseFloat(input.value);
+        if(isNaN(val) || val < 0){ val = 0; input.value = 0; }
+        t[input.getAttribute('data-f')] = val;
         saveFn(); renderAll();
       });
     });
@@ -1412,8 +1419,11 @@
       input.addEventListener('change', function(){
         var a = fundedAccounts.find(function(x){ return x.id === input.getAttribute('data-id'); }); if(!a) return;
         var f = input.getAttribute('data-ff');
-        if(input.type==='number'){ a[f] = parseFloat(input.value)||0; }
-        else { a[f] = input.value; }
+        if(input.type==='number'){
+          var val = parseFloat(input.value);
+          if(isNaN(val) || val < 0){ val = 0; input.value = 0; }
+          a[f] = val;
+        } else { a[f] = input.value; }
         if(f === 'firm' && settings.firmPresets[a.firm]){
           a.firmDailyLimitPct = settings.firmPresets[a.firm].dailyLimit;
           a.firmMaxLimitPct = settings.firmPresets[a.firm].maxLimit;
@@ -1482,7 +1492,11 @@
       input.addEventListener('change', function(){
         var a = liveAccounts.find(function(x){ return x.id === input.getAttribute('data-id'); }); if(!a) return;
         var f = input.getAttribute('data-lf');
-        a[f] = (input.type==='number') ? (parseFloat(input.value)||0) : input.value;
+        if(input.type==='number'){
+          var val = parseFloat(input.value);
+          if(isNaN(val) || val < 0){ val = 0; input.value = 0; }
+          a[f] = val;
+        } else { a[f] = input.value; }
         saveLive(); renderAll();
       });
     });
